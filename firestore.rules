@@ -1,0 +1,59 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ============================================
+    // Helper Functions
+    // ============================================
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isAuth() && request.auth.uid == uid;
+    }
+
+    function isShopOwner(shopId) {
+      return isAuth() &&
+        get(/databases/$(database)/documents/shops/$(shopId)).data.ownerId == request.auth.uid;
+    }
+
+    // ============================================
+    // Users — เจ้าของเท่านั้นที่อ่าน/แก้ไขได้
+    // ============================================
+    match /users/{uid} {
+      allow read, write: if isOwner(uid);
+    }
+
+    // ============================================
+    // Shops + Subcollections — เจ้าของร้านเท่านั้น
+    // ============================================
+    match /shops/{shopId} {
+      allow read, write: if isShopOwner(shopId);
+      // สร้างร้านใหม่ได้ ถ้า ownerId ตรงกับ user
+      allow create: if isAuth() && request.resource.data.ownerId == request.auth.uid;
+
+      // Subcollections: menuItems, knowledgeBase, customers, orders, etc.
+      match /{subcollection}/{docId} {
+        allow read, write: if isShopOwner(shopId);
+      }
+    }
+
+    // ============================================
+    // Analytics — เจ้าของร้านเท่านั้น
+    // ============================================
+    match /analytics/{shopId}/{document=**} {
+      allow read, write: if isShopOwner(shopId);
+    }
+
+    // ============================================
+    // AI Jobs — อ่านได้ถ้ามี shopId ตรง
+    // ============================================
+    match /aiJobs/{jobId} {
+      allow read: if isAuth() &&
+        resource.data.shopId in
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.shopId;
+      allow create: if isAuth();
+    }
+  }
+}
