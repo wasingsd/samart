@@ -6,7 +6,7 @@ export default function HomePage() {
       {/* Hero */}
       <div className="text-center max-w-2xl mx-auto px-6">
         <h1 className="text-5xl font-bold mb-4">
-          <span className="gradient-text">🧠 Panya</span>
+          <span className="gradient-text">Panya</span>
         </h1>
         <p className="text-xl text-dark-muted mb-2 font-display">
           AI สมองร้านค้า
@@ -22,7 +22,7 @@ export default function HomePage() {
             href="/register"
             className="px-8 py-3 rounded-xl text-white font-semibold gradient-primary hover:opacity-90 transition-opacity shadow-md"
           >
-            🚀 เริ่มต้นใช้งาน
+            เริ่มต้นใช้งาน
           </Link>
           <Link
             href="/login"

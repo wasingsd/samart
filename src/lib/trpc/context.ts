@@ -12,6 +12,11 @@ export interface Context {
 export async function createContext(opts: {
   headers: Headers;
 }): Promise<Context> {
+  // ถ้า Firebase Admin ยังไม่ configured → skip auth
+  if (!adminAuth) {
+    return { user: null };
+  }
+
   const authHeader = opts.headers.get("authorization");
 
   if (!authHeader?.startsWith("Bearer ")) {
@@ -26,3 +31,4 @@ export async function createContext(opts: {
     return { user: null };
   }
 }
+

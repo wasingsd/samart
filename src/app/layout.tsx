@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Prompt, Sarabun, Inter } from "next/font/google";
+import { Providers } from "@/components/providers/Providers";
 import "./globals.css";
 
 const prompt = Prompt({
@@ -44,7 +45,9 @@ export default function RootLayout({
   return (
     <html lang="th" className={`${prompt.variable} ${sarabun.variable} ${inter.variable}`}>
       <body className="antialiased min-h-screen">
-        {children}
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

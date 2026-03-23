@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../server";
-import { adminDb } from "@/lib/firebase/admin";
+import { getDb } from "@/lib/firebase/admin";
 import { CreateUserSchema } from "@/types";
 import { FieldValue } from "firebase-admin/firestore";
 
@@ -11,8 +11,8 @@ export const authRouter = router({
   createUserDoc: protectedProcedure
     .input(CreateUserSchema)
     .mutation(async ({ input }) => {
-      const userRef = adminDb.collection("users").doc(input.uid);
-      const userData = {
+      const userRef = getDb().collection("users").doc(input.uid);
+      const userData: Record<string, unknown> = {
         uid: input.uid,
         email: input.email,
         displayName: input.displayName,
@@ -23,14 +23,14 @@ export const authRouter = router({
       };
 
       await userRef.set(userData);
-      return userData;
+      return { uid: input.uid, email: input.email, displayName: input.displayName };
     }),
 
   /**
    * ดึงข้อมูล user ปัจจุบัน
    */
   getMe: protectedProcedure.query(async ({ ctx }) => {
-    const userDoc = await adminDb.collection("users").doc(ctx.user.uid).get();
+    const userDoc = await getDb().collection("users").doc(ctx.user.uid).get();
     if (!userDoc.exists) {
       return null;
     }
@@ -43,7 +43,7 @@ export const authRouter = router({
   connectLine: protectedProcedure
     .input(z.object({ lineUserId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      await adminDb.collection("users").doc(ctx.user.uid).update({
+      await getDb().collection("users").doc(ctx.user.uid).update({
         lineUserId: input.lineUserId,
         updatedAt: FieldValue.serverTimestamp(),
       });

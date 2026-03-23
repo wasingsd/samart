@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../server";
-import { adminDb } from "@/lib/firebase/admin";
+import { getDb } from "@/lib/firebase/admin";
 import { ShopCreateSchema, StyleProfileSchema } from "@/types";
 import { FieldValue } from "firebase-admin/firestore";
 
@@ -8,7 +8,7 @@ import { FieldValue } from "firebase-admin/firestore";
  * Helper: ดึง shopId ของ user
  */
 async function getShopIdForUser(uid: string): Promise<string | null> {
-  const userDoc = await adminDb.collection("users").doc(uid).get();
+  const userDoc = await getDb().collection("users").doc(uid).get();
   return userDoc.data()?.shopId ?? null;
 }
 
@@ -30,7 +30,7 @@ export const shopRouter = router({
   create: protectedProcedure
     .input(ShopCreateSchema)
     .mutation(async ({ ctx, input }) => {
-      const shopRef = adminDb.collection("shops").doc();
+      const shopRef = getDb().collection("shops").doc();
       const now = FieldValue.serverTimestamp();
 
       const shopData = {
@@ -45,9 +45,9 @@ export const shopRouter = router({
       };
 
       // Batch: สร้าง shop + อัปเดต user.shopId
-      const batch = adminDb.batch();
+      const batch = getDb().batch();
       batch.set(shopRef, shopData);
-      batch.update(adminDb.collection("users").doc(ctx.user.uid), {
+      batch.update(getDb().collection("users").doc(ctx.user.uid), {
         shopId: shopRef.id,
         updatedAt: now,
       });
@@ -63,7 +63,7 @@ export const shopRouter = router({
     const shopId = await getShopIdForUser(ctx.user.uid);
     if (!shopId) return null;
 
-    const shopDoc = await adminDb.collection("shops").doc(shopId).get();
+    const shopDoc = await getDb().collection("shops").doc(shopId).get();
     if (!shopDoc.exists) return null;
 
     return { id: shopDoc.id, ...shopDoc.data() };
@@ -85,7 +85,7 @@ export const shopRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const shopId = await assertShopOwner(ctx.user.uid);
-      await adminDb
+      await getDb()
         .collection("shops")
         .doc(shopId)
         .update({
@@ -102,7 +102,7 @@ export const shopRouter = router({
     .input(StyleProfileSchema)
     .mutation(async ({ ctx, input }) => {
       const shopId = await assertShopOwner(ctx.user.uid);
-      await adminDb.collection("shops").doc(shopId).update({
+      await getDb().collection("shops").doc(shopId).update({
         styleProfile: input,
         updatedAt: FieldValue.serverTimestamp(),
       });
@@ -122,7 +122,7 @@ export const shopRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const shopId = await assertShopOwner(ctx.user.uid);
-      await adminDb.collection("shops").doc(shopId).update({
+      await getDb().collection("shops").doc(shopId).update({
         ...input,
         lineConnected: true,
         updatedAt: FieldValue.serverTimestamp(),

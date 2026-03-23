@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../server";
-import { adminDb } from "@/lib/firebase/admin";
+import { getDb } from "@/lib/firebase/admin";
 import { MenuCreateSchema } from "@/types";
 import { FieldValue } from "firebase-admin/firestore";
 
@@ -8,7 +8,7 @@ import { FieldValue } from "firebase-admin/firestore";
  * Helper: ดึง shopId ของ user
  */
 async function getShopId(uid: string): Promise<string> {
-  const userDoc = await adminDb.collection("users").doc(uid).get();
+  const userDoc = await getDb().collection("users").doc(uid).get();
   const shopId = userDoc.data()?.shopId;
   if (!shopId) throw new Error("ไม่พบร้านค้า กรุณาสร้างร้านก่อน");
   return shopId;
@@ -22,7 +22,7 @@ export const menuRouter = router({
     .input(z.object({ category: z.string().optional() }).optional())
     .query(async ({ ctx, input }) => {
       const shopId = await getShopId(ctx.user.uid);
-      let query = adminDb
+      let query = getDb()
         .collection("shops")
         .doc(shopId)
         .collection("menuItems")
@@ -43,7 +43,7 @@ export const menuRouter = router({
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
       const shopId = await getShopId(ctx.user.uid);
-      const doc = await adminDb
+      const doc = await getDb()
         .collection("shops")
         .doc(shopId)
         .collection("menuItems")
@@ -61,7 +61,7 @@ export const menuRouter = router({
     .input(MenuCreateSchema)
     .mutation(async ({ ctx, input }) => {
       const shopId = await getShopId(ctx.user.uid);
-      const ref = adminDb
+      const ref = getDb()
         .collection("shops")
         .doc(shopId)
         .collection("menuItems")
@@ -90,7 +90,7 @@ export const menuRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const shopId = await getShopId(ctx.user.uid);
-      await adminDb
+      await getDb()
         .collection("shops")
         .doc(shopId)
         .collection("menuItems")
@@ -109,7 +109,7 @@ export const menuRouter = router({
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const shopId = await getShopId(ctx.user.uid);
-      await adminDb
+      await getDb()
         .collection("shops")
         .doc(shopId)
         .collection("menuItems")
@@ -125,7 +125,7 @@ export const menuRouter = router({
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const shopId = await getShopId(ctx.user.uid);
-      const ref = adminDb
+      const ref = getDb()
         .collection("shops")
         .doc(shopId)
         .collection("menuItems")
@@ -147,7 +147,7 @@ export const menuRouter = router({
    */
   listCategories: protectedProcedure.query(async ({ ctx }) => {
     const shopId = await getShopId(ctx.user.uid);
-    const snapshot = await adminDb
+    const snapshot = await getDb()
       .collection("shops")
       .doc(shopId)
       .collection("menuItems")

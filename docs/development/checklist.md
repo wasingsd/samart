@@ -73,7 +73,7 @@
 
 ### Day 4: Auth — Zod Schemas + tRPC Router
 
-- [ ] สร้าง `src/types/user.ts` — Zod schemas
+- [x] สร้าง `src/types/user.ts` — Zod schemas (implemented in index.ts)
   ```typescript
   export const UserSchema = z.object({
     uid: z.string(),
@@ -86,44 +86,42 @@
     updatedAt: z.any(),
   })
   ```
-- [ ] สร้าง `src/lib/trpc/routers/auth.ts`
+- [x] สร้าง `src/lib/trpc/routers/auth.ts`
   - `auth.createUserDoc` — mutation: สร้าง users/{uid} ใน Firestore
   - `auth.getMe` — query: ดึง user doc ปัจจุบัน
   - `auth.connectLine` — mutation: อัปเดต lineUserId
-- [ ] สร้าง `src/lib/firebase/auth.ts` — Auth helpers
+- [x] สร้าง `src/lib/firebase/auth.ts` — Auth helpers
   - `signUpWithEmail(email, password)`
   - `signInWithEmail(email, password)`
   - `signOut()`
   - `onAuthStateChange(callback)`
-- [ ] สร้าง `src/hooks/useAuth.ts` — Auth hook
+- [x] สร้าง `src/hooks/useAuth.ts` — Auth hook
   - `{ user, loading, error, signIn, signUp, signOut }`
-- [ ] สร้าง `src/contexts/AuthProvider.tsx`
+- [x] สร้าง `src/contexts/AuthProvider.tsx`
   - onAuthStateChanged listener
   - provide user + loading state
 
 ### Day 5: Auth — UI Pages
 
-- [ ] สร้าง `src/app/(auth)/layout.tsx` — Auth layout
+- [x] สร้าง `src/app/(auth)/layout.tsx` — Auth layout
   - Centered, brand gradient background
-  - Panya logo + tagline
-- [ ] สร้าง `src/app/(auth)/login/page.tsx`
+  - SAMART logo + tagline
+- [x] สร้าง `src/app/(auth)/login/page.tsx`
   - Email + password form
-  - "เข้าด้วย LINE" button (Phase 2)
+  - "เข้าด้วย LINE" button
   - Link ไป register
-  - **อ้างอิง Stitch**: `เข้าสู่ระบบ (V2)`
-- [ ] สร้าง `src/app/(auth)/register/page.tsx`
+- [x] สร้าง `src/app/(auth)/register/page.tsx`
   - ชื่อ + email + password form
   - เรียก `auth.createUserDoc` หลัง Firebase register
   - Redirect ไป `/onboarding`
-  - **อ้างอิง Stitch**: `สมัครสมาชิก (V2)`
-- [ ] สร้าง `src/middleware.ts` — Route protection
+- [x] สร้าง `src/middleware.ts` — Route protection
   - `/login`, `/register` → ไม่ต้อง auth
   - `/(dashboard)/*` → ต้อง auth, ถ้าไม่มี → redirect `/login`
   - ถ้า login แล้วแต่ไม่มี shopId → redirect `/onboarding`
 
 ### Day 6: Shop — Zod Schemas + tRPC Router
 
-- [ ] สร้าง `src/types/shop.ts` — Zod schemas
+- [x] สร้าง `src/types/shop.ts` — Zod schemas
   ```typescript
   export const BusinessHoursSchema = z.object({
     monday: DayHoursSchema,
@@ -148,29 +146,29 @@
     styleProfile: StyleProfileSchema,
   })
   ```
-- [ ] สร้าง `src/lib/trpc/routers/shop.ts`
+- [x] สร้าง `src/lib/trpc/routers/shop.ts`
   - `shop.create` — mutation: สร้าง shops/{shopId}, อัปเดต users.shopId
   - `shop.getByOwner` — query: ดึงร้านของ user
   - `shop.update` — mutation: แก้ไขข้อมูลร้าน
   - `shop.updateStyle` — mutation: บันทึก styleProfile
   - `shop.connectLine` — mutation: บันทึก LINE credentials
-- [ ] อัปเดต root router — merge shop router
+- [x] อัปเดต root router — merge shop router
 
 ### Day 7: Onboarding Wizard UI
 
-- [ ] สร้าง `src/app/onboarding/page.tsx` — 3-step wizard
+- [x] สร้าง `src/app/onboarding/page.tsx` — 3-step wizard
   - State: currentStep (1-3), formData
   - Progress bar (Step 1/3, 2/3, 3/3)
-- [ ] สร้าง `src/components/onboarding/StepShopInfo.tsx`
+- [x] สร้าง `src/components/onboarding/StepShopInfo.tsx`
   - ชื่อร้าน*, ประเภท* (dropdown), โทรศัพท์, ที่อยู่, โลโก้
   - **อ้างอิง Stitch**: `ออนบอร์ดดิ้ง 1: ข้อมูลร้าน (V2)`
-- [ ] สร้าง `src/components/onboarding/StepAISetup.tsx`
+- [x] สร้าง `src/components/onboarding/StepAISetup.tsx`
   - ชื่อ Bot, Formality slider, Emoji radio, ภาษา, คำทักทาย, คำปิดท้าย
   - **อ้างอิง Stitch**: `ออนบอร์ดดิ้ง 2: ตั้งค่า AI (V2)`
-- [ ] สร้าง `src/components/onboarding/StepScheduleMenu.tsx`
+- [x] สร้าง `src/components/onboarding/StepScheduleMenu.tsx`
   - เวลาเปิด-ปิด 7 วัน, เพิ่มเมนูเริ่มต้น (optional)
   - **อ้างอิง Stitch**: `ออนบอร์ดดิ้ง 3: เวลาและเมนู (V2)`
-- [ ] หลังกด "เสร็จสิ้น" → เรียก `shop.create` → redirect `/`
+- [x] หลังกด "เสร็จสิ้น" → เรียก `shop.create` → redirect `/`
 
 ---
 
