@@ -125,7 +125,7 @@ export function Sidebar({ isOpen, onClose, collapsed, onToggleCollapse }: Sideba
             </div>
             {!collapsed && (
               <div>
-                <h1 className="text-[15px] font-display font-bold text-white tracking-wide leading-tight">Panya</h1>
+                <h1 className="text-[15px] font-display font-bold text-white tracking-wide leading-tight">SAMART</h1>
                 <p className="text-[10px] text-gray-500 leading-tight">AI สมองร้านค้า</p>
               </div>
             )}

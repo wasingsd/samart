@@ -21,8 +21,10 @@ export const contentRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      // TODO: Connect to Gemini API for actual content generation
-      // For now, return a structured placeholder
+      // Check content generation quota
+      const { enforceQuota } = await import("@/lib/billing/guard");
+      await enforceQuota(input.shopId, "content_generation");
+
       const typeLabels: Record<string, string> = {
         promotion: "โปรโมชัน",
         "new-product": "สินค้าใหม่",
@@ -31,7 +33,32 @@ export const contentRouter = router({
         tips: "เกร็ดความรู้",
       };
 
-      const content = `[AI Generated - ${typeLabels[input.postType]}]\n\n${input.topic}\n\n(Content จะถูกสร้างอัตโนมัติเมื่อเชื่อมต่อ Gemini API)`;
+      const toneLabels: Record<string, string> = {
+        friendly: "เป็นกันเอง",
+        professional: "มืออาชีพ",
+        fun: "สนุกสนาน",
+        luxury: "หรูหรา",
+      };
+
+      // Generate content with Gemini
+      let content: string;
+      try {
+        const { generatePro } = await import("@/lib/ai/gemini");
+        const platformStr = [
+          input.platforms.facebook ? "Facebook" : "",
+          input.platforms.line ? "LINE" : "",
+        ].filter(Boolean).join(" + ");
+
+        content = await generatePro(
+          `คุณเป็นนักเขียน content มืออาชีพสำหรับร้านค้าในประเทศไทย
+เขียนเป็นภาษาไทย น้ำเสียง: ${toneLabels[input.tone]}
+แพลตฟอร์ม: ${platformStr}
+ให้ content พร้อมใช้งาน ไม่ต้องใส่คำอธิบายเพิ่มเติม`,
+          `สร้างโพสต์ ${typeLabels[input.postType]} เกี่ยวกับ: ${input.topic}`
+        );
+      } catch {
+        content = `[${typeLabels[input.postType]}]\n\n${input.topic}\n\n(กรุณาตั้งค่า GEMINI_API_KEY เพื่อใช้ AI สร้าง content)`;
+      }
 
       // Save draft
       const docRef = getDb()
@@ -51,6 +78,10 @@ export const contentRouter = router({
         createdAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
       });
+
+      // Track usage
+      const { trackUsage } = await import("@/lib/billing/usage");
+      await trackUsage(input.shopId, "content_generation");
 
       return { id: docRef.id, content };
     }),

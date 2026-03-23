@@ -7,9 +7,11 @@ import { chatLogRouter } from "./chatLog";
 import { analyticsRouter } from "./analytics";
 import { customerRouter } from "./customer";
 import { contentRouter } from "./content";
+import { billingRouter } from "./billing";
+import { aiRouter } from "./ai";
 
 /**
- * Root Router — ครบทุก sub-router
+ * SAMART Root Router — 10 modules
  */
 export const appRouter = router({
   auth: authRouter,
@@ -20,6 +22,8 @@ export const appRouter = router({
   analytics: analyticsRouter,
   customer: customerRouter,
   content: contentRouter,
+  billing: billingRouter,
+  ai: aiRouter,
 });
 
 export type AppRouter = typeof appRouter;

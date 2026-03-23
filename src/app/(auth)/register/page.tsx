@@ -4,14 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-// NOTE: Assuming trpc client is setup at "@/lib/trpc/client"
 import { trpc } from "@/lib/trpc/client";
 
 export default function RegisterPage() {
   const router = useRouter();
   const { signUp } = useAuth();
-  
-  // We'll catch if trpc isn't fully ready but assume standard structure
   const createUser = trpc.auth.createUserDoc.useMutation();
 
   const [name, setName] = useState("");
@@ -20,13 +17,35 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Custom validation state — replaces browser default tooltips
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const validate = () => {
+    const errors: Record<string, string> = {};
+    if (!name.trim()) errors.name = "กรุณากรอกชื่อ";
+    if (!email.trim()) errors.email = "กรุณากรอกอีเมล";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = "รูปแบบอีเมลไม่ถูกต้อง";
+    if (!password) errors.password = "กรุณากรอกรหัสผ่าน";
+    else if (password.length < 6) errors.password = "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร";
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleBlur = (field: string) => {
+    setTouched((t) => ({ ...t, [field]: true }));
+    validate();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setTouched({ name: true, email: true, password: true });
+    if (!validate()) return;
+
     setLoading(true);
     setError(null);
     try {
       const user = await signUp(email, password);
-      // Wait for firebase auth to settle, then create user doc
       if (user) {
         await createUser.mutateAsync({
           uid: user.uid,
@@ -35,120 +54,157 @@ export default function RegisterPage() {
         });
       }
       router.push("/onboarding");
-    } catch (err: any) {
-      setError(err.message || "เกิดข้อผิดพลาดในการสมัครสมาชิก");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "เกิดข้อผิดพลาดในการสมัครสมาชิก";
+      setError(message);
     } finally {
       setLoading(false);
     }
   };
 
+  const inputClass = (field: string) =>
+    `appearance-none block w-full px-4 py-3.5 rounded-xl shadow-sm placeholder-gray-500 bg-[#0A0F1F]/50 text-white focus:outline-none transition-all duration-200 hover:bg-[#0A0F1F] ${
+      touched[field] && fieldErrors[field]
+        ? "border-2 border-red-500/60 focus:ring-2 focus:ring-red-500/40 focus:border-red-500/60"
+        : "border border-gray-700/60 focus:ring-2 focus:ring-[#00B4D8]/50 focus:border-[#00B4D8]/60"
+    }`;
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <form className="space-y-6" onSubmit={handleSubmit}>
+      <form className="space-y-5" onSubmit={handleSubmit} noValidate>
+        {/* Name */}
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-300">
+          <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1.5">
             ชื่อ - นามสกุล
           </label>
-          <div className="mt-1">
-            <input
-              id="name"
-              name="name"
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="appearance-none block w-full px-4 py-3 border border-gray-700 rounded-xl shadow-sm placeholder-gray-500 bg-[#0A0F1F]/50 text-white focus:outline-none focus:ring-2 focus:ring-[#00B4D8] focus:border-transparent transition-all hover:bg-[#0A0F1F]"
-              placeholder="ชื่อร้าน หรือ ชื่อของคุณ"
-            />
-          </div>
+          <input
+            id="name"
+            name="name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onBlur={() => handleBlur("name")}
+            className={inputClass("name")}
+            placeholder="ชื่อร้าน หรือ ชื่อของคุณ"
+          />
+          {touched.name && fieldErrors.name && (
+            <p className="mt-1.5 text-xs text-red-400 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+              <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+              {fieldErrors.name}
+            </p>
+          )}
         </div>
 
+        {/* Email */}
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-300">
+          <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1.5">
             อีเมล
           </label>
-          <div className="mt-1">
-            <input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="appearance-none block w-full px-4 py-3 border border-gray-700 rounded-xl shadow-sm placeholder-gray-500 bg-[#0A0F1F]/50 text-white focus:outline-none focus:ring-2 focus:ring-[#00B4D8] focus:border-transparent transition-all hover:bg-[#0A0F1F]"
-              placeholder="you@example.com"
-            />
-          </div>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onBlur={() => handleBlur("email")}
+            className={inputClass("email")}
+            placeholder="you@example.com"
+          />
+          {touched.email && fieldErrors.email && (
+            <p className="mt-1.5 text-xs text-red-400 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+              <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+              {fieldErrors.email}
+            </p>
+          )}
         </div>
 
+        {/* Password */}
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-300">
+          <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1.5">
             รหัสผ่าน
           </label>
-          <div className="mt-1">
-            <input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="new-password"
-              required
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="appearance-none block w-full px-4 py-3 border border-gray-700 rounded-xl shadow-sm placeholder-gray-500 bg-[#0A0F1F]/50 text-white focus:outline-none focus:ring-2 focus:ring-[#00B4D8] focus:border-transparent transition-all hover:bg-[#0A0F1F]"
-              placeholder="อย่างน้อย 6 ตัวอักษร"
-            />
-          </div>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onBlur={() => handleBlur("password")}
+            className={inputClass("password")}
+            placeholder="อย่างน้อย 6 ตัวอักษร"
+          />
+          {touched.password && fieldErrors.password && (
+            <p className="mt-1.5 text-xs text-red-400 flex items-center gap-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+              <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+              {fieldErrors.password}
+            </p>
+          )}
+          {/* Password strength indicator */}
+          {password.length > 0 && (
+            <div className="mt-2 flex gap-1.5">
+              {[1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  className={`h-1 flex-1 rounded-full transition-all duration-300 ${
+                    password.length >= i * 3
+                      ? password.length >= 12
+                        ? "bg-emerald-500"
+                        : password.length >= 8
+                          ? "bg-yellow-500"
+                          : "bg-red-500"
+                      : "bg-gray-700"
+                  }`}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
+        {/* Server error */}
         {error && (
-          <div className="text-sm text-red-400 bg-red-400/10 p-3 rounded-lg border border-red-400/20">
+          <div className="text-sm text-red-400 bg-red-400/10 p-3.5 rounded-xl border border-red-400/20 flex items-start gap-2 animate-in fade-in duration-300">
+            <svg className="w-5 h-5 shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg>
             {error}
           </div>
         )}
 
-        <div>
-          <button
-            type="submit"
-            disabled={loading || createUser.isPending}
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg shadow-emerald-500/20 text-sm font-semibold text-white bg-gradient-to-r from-[#2D9C5A] to-[#10B981] hover:from-[#218048] hover:to-[#059669] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#10B981] focus:ring-offset-[#131B2F] transition-all disabled:opacity-50 disabled:cursor-not-allowed group"
-          >
-            {loading || createUser.isPending ? (
-              <span className="animate-pulse">กำลังสร้างบัญชี...</span>
-            ) : (
-              <span className="flex items-center">
-                สมัครสมาชิกฟรี
-                <svg
-                  className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-              </span>
-            )}
-          </button>
-        </div>
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={loading || createUser.isPending}
+          className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-lg shadow-emerald-500/20 text-sm font-semibold text-white bg-gradient-to-r from-[#2D9C5A] to-[#10B981] hover:from-[#218048] hover:to-[#059669] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#10B981] focus:ring-offset-[#131B2F] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group"
+        >
+          {loading || createUser.isPending ? (
+            <span className="flex items-center gap-2">
+              <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+              กำลังสร้างบัญชี...
+            </span>
+          ) : (
+            <span className="flex items-center">
+              สมัครสมาชิกฟรี
+              <svg className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+            </span>
+          )}
+        </button>
       </form>
 
+      {/* Divider */}
       <div className="mt-8">
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-gray-700" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-[#131B2F] text-gray-500">
-              หรือลงทะเบียนด้วย
-            </span>
+            <span className="px-2 bg-[#131B2F] text-gray-500">หรือลงทะเบียนด้วย</span>
           </div>
         </div>
 
         <div className="mt-6">
           <button
             type="button"
-            className="w-full inline-flex justify-center py-3 px-4 rounded-xl shadow-sm bg-[#0A0F1F] border border-gray-700 text-sm font-medium text-white hover:bg-gray-800 focus:outline-none transition-all hover:border-gray-500"
+            className="w-full inline-flex justify-center py-3.5 px-4 rounded-xl shadow-sm bg-[#0A0F1F] border border-gray-700 text-sm font-medium text-white hover:bg-gray-800 focus:outline-none transition-all hover:border-gray-500"
           >
             <span className="font-bold flex items-center gap-2">
               <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">

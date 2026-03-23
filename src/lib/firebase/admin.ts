@@ -12,7 +12,7 @@ function initAdmin(): App | null {
   // Firebase Admin ใช้ได้เฉพาะ server-side เท่านั้น
   if (typeof window !== "undefined") return null;
   if (!isAdminConfigured) {
-    console.warn("⚠️ Firebase Admin credentials ยังไม่ได้ตั้งค่า — tRPC protected routes จะ error");
+    console.warn("Firebase Admin credentials not configured — tRPC protected routes will error");
     return null;
   }
 

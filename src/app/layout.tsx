@@ -24,7 +24,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Panya — AI สมองร้านค้า",
+  title: "SAMART — AI สมองร้านค้า",
   description:
     "ระบบ AI อัจฉริยะสำหรับร้านค้าเชียงใหม่ แชทบอท LINE วิเคราะห์ยอดขาย สร้างโพสต์ AI สรุป Insight รายวัน",
   keywords: [

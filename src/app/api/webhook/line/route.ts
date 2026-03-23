@@ -16,24 +16,28 @@ import { getDb } from "@/lib/firebase/admin";
  */
 export async function POST(req: NextRequest) {
   try {
-    const shopId = req.nextUrl.searchParams.get("shopId");
-    if (!shopId) {
-      return NextResponse.json({ error: "Missing shopId" }, { status: 400 });
-    }
+    const shopId = req.nextUrl.searchParams.get("shopId") || "default";
 
     // Read body as text for signature validation
     const bodyText = await req.text();
     const signature = req.headers.get("x-line-signature") || "";
 
-    // Get shop LINE credentials
-    const shopDoc = await getDb().collection("shops").doc(shopId).get();
-    if (!shopDoc.exists) {
-      return NextResponse.json({ error: "Shop not found" }, { status: 404 });
-    }
+    // Get LINE credentials: try shop doc first, fallback to env vars
+    let channelSecret = process.env.LINE_CHANNEL_SECRET;
+    let accessToken = process.env.LINE_ACCESS_TOKEN;
 
-    const shop = shopDoc.data();
-    const channelSecret = shop?.lineChannelSecret;
-    const accessToken = shop?.lineAccessToken;
+    if (shopId !== "default") {
+      try {
+        const shopDoc = await getDb().collection("shops").doc(shopId).get();
+        if (shopDoc.exists) {
+          const shop = shopDoc.data();
+          if (shop?.lineChannelSecret) channelSecret = shop.lineChannelSecret;
+          if (shop?.lineAccessToken) accessToken = shop.lineAccessToken;
+        }
+      } catch {
+        // Firestore not configured — use env vars
+      }
+    }
 
     if (!channelSecret || !accessToken) {
       return NextResponse.json({ error: "LINE not configured" }, { status: 400 });
@@ -137,8 +141,11 @@ async function handleEvent(
 }
 
 /**
- * Handle text message — placeholder for AI Chat Brain (Phase 4)
- * ตอนนี้ reply ด้วย default message ก่อน
+ * Handle text message — SAMART AI Chat Brain
+ * 1. เช็ค quota
+ * 2. เรียก Chat Brain (Gemini + RAG)
+ * 3. Reply ผ่าน LINE
+ * 4. Log conversation + track usage
  */
 async function handleTextMessage(
   userId: string,
@@ -147,26 +154,62 @@ async function handleTextMessage(
   shopId: string,
   accessToken: string
 ) {
-  // TODO Phase 4: AI Chat Brain (Gemini + RAG) จะมาแทนที่ตรงนี้
-  // 1. ค้นหา knowledge base ที่เกี่ยวข้อง (RAG)
-  // 2. ส่งให้ Gemini สร้างคำตอบ
-  // 3. บันทึก conversation log
+  let aiReply: string;
+  let status: string = "pending";
 
-  // Default reply
-  const shopDoc = await getDb().collection("shops").doc(shopId).get();
-  const shopName = shopDoc.data()?.name || "ร้านค้า";
+  try {
+    // 1. Check AI message quota
+    const { checkQuota } = await import("@/lib/billing/guard");
+    const quota = await checkQuota(shopId, "ai_message");
 
-  await replyMessage(
-    replyToken,
-    [
-      textMessage(
-        `ขอบคุณที่ส่งข้อความมาครับ/ค่ะ ขณะนี้ระบบ AI ของ ${shopName} กำลังเรียนรู้ข้อมูล ทางร้านจะตอบกลับโดยเร็วที่สุดนะครับ/ค่ะ`
-      ),
-    ],
-    accessToken
-  );
+    if (!quota.allowed) {
+      // Quota exceeded — send polite fallback
+      aiReply = "ขอบคุณที่ส่งข้อความมาครับ/ค่ะ ขณะนี้ระบบกำลังดำเนินการ ทางร้านจะตอบกลับโดยเร็วที่สุดนะครับ/ค่ะ";
+      status = "quota_exceeded";
+    } else {
+      // 2. Call AI Chat Brain
+      const { handleChatMessage } = await import("@/lib/ai/chat-brain");
 
-  // Log conversation
+      // Get customer name if available
+      let customerName: string | undefined;
+      let customerSegment: string | undefined;
+      try {
+        const customerDoc = await getDb()
+          .collection("shops").doc(shopId)
+          .collection("customers").doc(userId).get();
+        if (customerDoc.exists) {
+          const c = customerDoc.data();
+          customerName = c?.displayName;
+          customerSegment = c?.segment;
+        }
+      } catch {
+        // Ignore
+      }
+
+      const result = await handleChatMessage({
+        shopId,
+        customerMessage: message,
+        customerName,
+        customerSegment,
+      });
+
+      aiReply = result.reply;
+      status = "ai_replied";
+
+      // 3. Track usage
+      const { trackUsage } = await import("@/lib/billing/usage");
+      await trackUsage(shopId, "ai_message");
+    }
+  } catch (error) {
+    console.error("Chat Brain error:", error);
+    aiReply = "ขอบคุณที่ส่งข้อความมาครับ/ค่ะ ขณะนี้ระบบมีปัญหาชั่วคราว ทางร้านจะติดต่อกลับโดยเร็วครับ/ค่ะ";
+    status = "error";
+  }
+
+  // 4. Reply via LINE
+  await replyMessage(replyToken, [textMessage(aiReply)], accessToken);
+
+  // 5. Log conversation
   await getDb()
     .collection("shops")
     .doc(shopId)
@@ -175,8 +218,8 @@ async function handleTextMessage(
       customerLineUserId: userId,
       customerName: "",
       customerMessage: message,
-      aiReply: `(default reply — AI ยังไม่พร้อม)`,
-      status: "pending",
+      aiReply,
+      status,
       createdAt: new Date(),
     });
 }

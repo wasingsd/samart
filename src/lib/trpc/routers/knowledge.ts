@@ -95,6 +95,10 @@ export const knowledgeRouter = router({
       data: KnowledgeCreateSchema,
     }))
     .mutation(async ({ input }) => {
+      // Check knowledge doc quota
+      const { enforceQuota } = await import("@/lib/billing/guard");
+      await enforceQuota(input.shopId, "knowledge_doc");
+
       const docRef = getDb()
         .collection("shops")
         .doc(input.shopId)

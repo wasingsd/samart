@@ -120,7 +120,7 @@ export default function DashboardPage() {
           </h1>
           <p className="text-white/60 text-sm lg:text-base mt-1">{dateStr}</p>
           <p className="mt-3 text-white/80 text-sm lg:text-base max-w-xl leading-relaxed">
-            ยินดีต้อนรับสู่ <span className="font-semibold text-white">Panya</span> — ผู้ช่วย AI ที่จะช่วยดูแลร้านค้าของคุณ
+            ยินดีต้อนรับสู่ <span className="font-semibold text-white">SAMART</span> — ผู้ช่วย AI ที่จะช่วยดูแลร้านค้าของคุณ
           </p>
         </div>
       </div>

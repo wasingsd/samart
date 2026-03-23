@@ -12,7 +12,7 @@ export default function AuthLayout({
       <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
         <div className="flex justify-center flex-col items-center">
           <div className="h-16 w-16 bg-gradient-to-tr from-[#1A237E] to-[#00B4D8] rounded-2xl flex items-center justify-center shadow-xl shadow-blue-900/20 transform transition-transform hover:scale-105 duration-300">
-            <span className="text-3xl font-bold text-white">P</span>
+            <span className="text-3xl font-bold text-white">S</span>
           </div>
           <h2 className="mt-6 text-center text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400 font-display">
             SAMART
