@@ -1,4 +1,4 @@
-# 📊 Insight Brain Skill — Panya AI
+# 📊 Insight Brain Skill — SAMART AI
 
 > **Module:** Guide (นำทาง)
 > **Model:** Gemini 2.0 Pro

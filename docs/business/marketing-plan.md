@@ -1,4 +1,4 @@
-# 📣 Panya — Marketing Plan
+# 📣 SAMART — Marketing Plan
 
 > แผนการตลาดแบ่งเป็น 3 เฟส: Pre-Launch → Launch → Scale
 
@@ -16,7 +16,7 @@
 
 **Action items:**
 - [ ] เดินเข้าไปคุยกับเจ้าของร้าน 5 ร้านต่อสัปดาห์ ย่านนิมมาน, ช้างคลาน, Old City
-- [ ] เสนอ **"Panya Founding Member" — ทดลองฟรี 60 วัน** แลกกับ feedback + testimonial
+- [ ] เสนอ **"SAMART Founding Member" — ทดลองฟรี 60 วัน** แลกกับ feedback + testimonial
 - [ ] ถ่ายภาพ before/after: ยอดขาย, เวลาที่ประหยัดได้, ลูกค้าใหม่
 - [ ] เป้า: ปิด 15 ร้าน pilot ภายในเดือนที่ 3
 
@@ -33,9 +33,9 @@
 ### 📱 Content Marketing — สร้าง Authority
 
 **ช่องทาง:**
-- Facebook Page: `Panya — AI สำหรับร้านคุณ`
-- TikTok: `@panya.ai`
-- LINE OA: `@panya`
+- Facebook Page: `SAMART — AI สำหรับร้านคุณ`
+- TikTok: `@samart.ai`
+- LINE OA: `@samart`
 
 **Content Pillars (โพสต์สลับกัน 3 แบบ):**
 
@@ -69,7 +69,7 @@
 **Launch Week Activities:**
 - Day 1: ประกาศบน Facebook/TikTok พร้อมวิดีโอ demo 60 วินาที
 - Day 2-3: ส่ง LINE broadcast ให้ pilot users ช่วยแชร์
-- Day 4-5: Live บน Facebook "เปิดตัว Panya — AI สมองร้านค้า"
+- Day 4-5: Live บน Facebook "เปิดตัว SAMART — AI สมองร้านค้า"
 - Day 6-7: Press release ส่งสื่อท้องถิ่น (Lanner, CM Citylife, The Cloud)
 
 ---
@@ -81,8 +81,8 @@
 ```
 
 - [ ] สร้าง referral link ในแอป
-- [ ] ส่ง "Panya Referral Kit" (card + sticker) ให้ลูกค้าเก่าทุกคน
-- [ ] Badge "Panya Certified Store" สติ๊กเกอร์ติดหน้าร้าน → สร้าง FOMO
+- [ ] ส่ง "SAMART Referral Kit" (card + sticker) ให้ลูกค้าเก่าทุกคน
+- [ ] Badge "SAMART Certified Store" สติ๊กเกอร์ติดหน้าร้าน → สร้าง FOMO
 
 ---
 
@@ -119,9 +119,9 @@
 
 ออกแบบให้ตัวผลิตภัณฑ์ทำการตลาดเอง:
 
-- **Content Watermark**: ทุกโพสต์ที่ AI Create สร้าง → มี "Powered by Panya" เล็กๆ
-- **Chat Footer**: ข้อความจาก Chat Brain → "ขับเคลื่อนโดย Panya AI"
-- **Store Badge**: ร้านที่ใช้ Panya จะมี badge บน Google Maps listing
+- **Content Watermark**: ทุกโพสต์ที่ AI Create สร้าง → มี "Powered by SAMART" เล็กๆ
+- **Chat Footer**: ข้อความจาก Chat Brain → "ขับเคลื่อนโดย SAMART AI"
+- **Store Badge**: ร้านที่ใช้ SAMART จะมี badge บน Google Maps listing
 
 ---
 

@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Store, Sparkles, MessageCircle, CreditCard, Save, TestTube, ExternalLink, ShieldAlert, Plus, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Store, Sparkles, MessageCircle, CreditCard, Save, TestTube, ExternalLink, ShieldAlert, Plus, X, Loader2, Check, AlertCircle } from "lucide-react";
+import { trpc } from "@/lib/trpc/client";
+import { useShopStore } from "@/stores/useShopStore";
 
 type TabId = "shop" | "ai-style" | "line" | "plan";
 const tabs: { id: TabId; label: string; icon: React.ElementType }[] = [
@@ -13,6 +15,16 @@ const tabs: { id: TabId; label: string; icon: React.ElementType }[] = [
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<TabId>("shop");
+  const shop = useShopStore((s) => s.shop);
+
+  if (!shop) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px] text-gray-400">
+        <p>กำลังโหลดข้อมูลร้าน...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
@@ -27,17 +39,30 @@ export default function SettingsPage() {
         ))}
       </div>
       <div className="bg-white rounded-xl shadow-sm border border-surface-container">
-        {activeTab === "shop" && <ShopInfoTab />}
-        {activeTab === "ai-style" && <AIStyleTab />}
-        {activeTab === "line" && <LineOATab />}
-        {activeTab === "plan" && <PlanTab />}
+        {activeTab === "shop" && <ShopInfoTab shopId={shop.id} shop={shop} />}
+        {activeTab === "ai-style" && <AIStyleTab shopId={shop.id} shop={shop} />}
+        {activeTab === "line" && <LineOATab shopId={shop.id} shop={shop} />}
+        {activeTab === "plan" && <PlanTab shop={shop} />}
       </div>
     </div>
   );
 }
 
-function ShopInfoTab() {
-  const [name, setName] = useState(""); const [category, setCategory] = useState("restaurant"); const [phone, setPhone] = useState(""); const [address, setAddress] = useState("");
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function ShopInfoTab({ shopId, shop }: { shopId: string; shop: any }) {
+  const [name, setName] = useState(shop.name || "");
+  const [category, setCategory] = useState(shop.category || "restaurant");
+  const [phone, setPhone] = useState(shop.phone || "");
+  const [address, setAddress] = useState(shop.address || "");
+
+  const updateMutation = trpc.shop.update.useMutation();
+  const setShop = useShopStore((s) => s.setShop);
+
+  const handleSave = async () => {
+    await updateMutation.mutateAsync({ name, category, phone, address });
+    setShop({ ...shop, name, category, phone, address });
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div><h3 className="font-display font-semibold text-dark mb-1">ข้อมูลร้านค้า</h3><p className="text-xs text-dark-muted">ข้อมูลพื้นฐานที่ AI ใช้ตอบลูกค้า</p></div>
@@ -49,24 +74,60 @@ function ShopInfoTab() {
         </div>
         <div><label className="block text-xs font-bold tracking-wider text-dark-muted mb-1.5 uppercase">ที่อยู่</label><textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder="ที่อยู่ร้าน" rows={3} className="w-full px-4 py-2.5 rounded-xl bg-surface-dim border border-surface-container-high text-sm text-dark outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none" /></div>
       </div>
-      <div className="flex justify-end pt-2"><button className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white gradient-primary hover:opacity-90 transition-opacity shadow-sm"><Save className="w-4 h-4" />บันทึก</button></div>
+      <div className="flex items-center justify-end gap-3 pt-2">
+        {updateMutation.isSuccess && <span className="text-xs text-emerald-600 flex items-center gap-1"><Check className="w-3.5 h-3.5" />บันทึกแล้ว</span>}
+        {updateMutation.isError && <span className="text-xs text-red-500 flex items-center gap-1"><AlertCircle className="w-3.5 h-3.5" />เกิดข้อผิดพลาด</span>}
+        <button onClick={handleSave} disabled={updateMutation.isPending} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white gradient-primary hover:opacity-90 transition-opacity shadow-sm disabled:opacity-50">
+          {updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          บันทึก
+        </button>
+      </div>
     </div>
   );
 }
 
-function AIStyleTab() {
-  const [botName, setBotName] = useState("น้องมะลิ");
-  const [formality, setFormality] = useState(50);
-  const [emoji, setEmoji] = useState<"none" | "some" | "lots">("some");
-  const [replyLength, setReplyLength] = useState<"short" | "medium" | "long">("medium");
-  const [language, setLanguage] = useState<"thai" | "mixed" | "english">("thai");
-  const [closingPhrase, setClosingPhrase] = useState("ขอบคุณมากนะคะ");
-  const [guardrails, setGuardrails] = useState<string[]>(["ห้ามบอกราคาต้นทุน"]);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function AIStyleTab({ shopId, shop }: { shopId: string; shop: any }) {
+  const style = shop.styleProfile || {};
+  const [botName, setBotName] = useState(style.botName || "น้องมะลิ");
+  const [formality, setFormality] = useState(style.formalityLevel ?? 50);
+  const [emoji, setEmoji] = useState<"none" | "some" | "lots">(style.emojiUsage || "some");
+  const [replyLength, setReplyLength] = useState<"short" | "medium" | "long">(style.replyLength || "medium");
+  const [language, setLanguage] = useState<"thai" | "mixed" | "english">(style.language || "thai");
+  const [openingGreeting, setOpeningGreeting] = useState(style.openingGreeting || "สวัสดีค่ะ");
+  const [closingPhrase, setClosingPhrase] = useState(style.closingPhrase || "ขอบคุณมากนะคะ");
+  const [guardrails, setGuardrails] = useState<string[]>(style.guardrails || ["ห้ามบอกราคาต้นทุน"]);
   const [newGuardrail, setNewGuardrail] = useState("");
   const [testMessage, setTestMessage] = useState("");
+  const [previewReply, setPreviewReply] = useState("");
+
+  const updateStyleMutation = trpc.shop.updateStyle.useMutation();
+  const previewMutation = trpc.ai.previewAI.useMutation();
+  const setShop = useShopStore((s) => s.setShop);
 
   const addGuardrail = () => { if (newGuardrail.trim()) { setGuardrails([...guardrails, newGuardrail.trim()]); setNewGuardrail(""); } };
   const removeGuardrail = (i: number) => setGuardrails(guardrails.filter((_, idx) => idx !== i));
+
+  const handleSaveStyle = async () => {
+    const styleData = {
+      botName,
+      formalityLevel: formality,
+      emojiUsage: emoji,
+      replyLength,
+      language,
+      openingGreeting,
+      closingPhrase,
+      guardrails,
+    };
+    await updateStyleMutation.mutateAsync(styleData);
+    setShop({ ...shop, styleProfile: styleData });
+  };
+
+  const handleTestAI = async () => {
+    if (!testMessage.trim()) return;
+    const result = await previewMutation.mutateAsync({ shopId, question: testMessage });
+    setPreviewReply(result.reply);
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -94,7 +155,10 @@ function AIStyleTab() {
           <div className="flex gap-2">{(["thai", "mixed", "english"] as const).map((opt) => (<button key={opt} onClick={() => setLanguage(opt)} className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${language === opt ? "bg-primary text-white shadow-sm" : "bg-surface-dim text-dark-muted hover:bg-surface-container"}`}>{opt === "thai" ? "ไทย" : opt === "mixed" ? "ผสม" : "English"}</button>))}</div>
         </div>
 
-        <div><label className="block text-xs font-bold tracking-wider text-dark-muted mb-1.5 uppercase">คำปิดท้าย</label><input type="text" value={closingPhrase} onChange={(e) => setClosingPhrase(e.target.value)} className="w-full px-4 py-2.5 rounded-xl bg-surface-dim border border-surface-container-high text-sm text-dark outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" /></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div><label className="block text-xs font-bold tracking-wider text-dark-muted mb-1.5 uppercase">คำทักทาย</label><input type="text" value={openingGreeting} onChange={(e) => setOpeningGreeting(e.target.value)} placeholder="สวัสดีค่ะ" className="w-full px-4 py-2.5 rounded-xl bg-surface-dim border border-surface-container-high text-sm text-dark outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" /></div>
+          <div><label className="block text-xs font-bold tracking-wider text-dark-muted mb-1.5 uppercase">คำปิดท้าย</label><input type="text" value={closingPhrase} onChange={(e) => setClosingPhrase(e.target.value)} placeholder="ขอบคุณมากนะคะ" className="w-full px-4 py-2.5 rounded-xl bg-surface-dim border border-surface-container-high text-sm text-dark outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" /></div>
+        </div>
 
         <div>
           <label className="block text-xs font-bold tracking-wider text-dark-muted mb-2 uppercase"><ShieldAlert className="inline w-3.5 h-3.5 mr-1" />สิ่งที่ AI ห้ามพูด</label>
@@ -102,19 +166,58 @@ function AIStyleTab() {
           <div className="flex gap-2"><input type="text" value={newGuardrail} onChange={(e) => setNewGuardrail(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addGuardrail()} placeholder="เช่น ห้ามพูดถึงคู่แข่ง" className="flex-1 px-4 py-2 rounded-lg bg-surface-dim border border-surface-container-high text-sm text-dark outline-none focus:ring-2 focus:ring-primary/20 transition-all" /><button onClick={addGuardrail} className="p-2 rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors text-dark-muted"><Plus className="w-4 h-4" /></button></div>
         </div>
 
+        {/* AI Preview */}
         <div className="border-t border-surface-container pt-5">
           <label className="block text-xs font-bold tracking-wider text-dark-muted mb-2 uppercase">ทดสอบ AI</label>
-          <div className="flex gap-2"><input type="text" value={testMessage} onChange={(e) => setTestMessage(e.target.value)} placeholder="ลองถาม: มีอะไรบ้าง" className="flex-1 px-4 py-2 rounded-lg bg-surface-dim border border-surface-container-high text-sm text-dark outline-none focus:ring-2 focus:ring-primary/20 transition-all" /><button className="px-4 py-2 rounded-lg bg-secondary text-white text-sm font-medium hover:bg-secondary/80 transition-colors">ส่ง</button></div>
-          <div className="mt-3 p-4 bg-surface-dim rounded-xl text-sm text-dark-muted italic">ระบบ preview จะพร้อมใช้เมื่อเชื่อมต่อ AI...</div>
+          <div className="flex gap-2">
+            <input type="text" value={testMessage} onChange={(e) => setTestMessage(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleTestAI()} placeholder="ลองถาม: มีอะไรบ้าง" className="flex-1 px-4 py-2 rounded-lg bg-surface-dim border border-surface-container-high text-sm text-dark outline-none focus:ring-2 focus:ring-primary/20 transition-all" />
+            <button onClick={handleTestAI} disabled={previewMutation.isPending || !testMessage.trim()} className="px-4 py-2 rounded-lg bg-secondary text-white text-sm font-medium hover:bg-secondary/80 transition-colors disabled:opacity-50">
+              {previewMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "ส่ง"}
+            </button>
+          </div>
+          <div className="mt-3 p-4 bg-surface-dim rounded-xl text-sm text-dark-muted">
+            {previewMutation.isPending ? (
+              <span className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" />AI กำลังคิดคำตอบ...</span>
+            ) : previewReply ? (
+              <span className="text-dark not-italic">{previewReply}</span>
+            ) : previewMutation.isError ? (
+              <span className="text-red-500">เกิดข้อผิดพลาด — ตรวจสอบว่า Gemini API Key ถูกต้อง</span>
+            ) : (
+              <span className="italic">พิมพ์คำถามแล้วกด &quot;ส่ง&quot; เพื่อดูว่า AI จะตอบอย่างไร</span>
+            )}
+          </div>
         </div>
       </div>
-      <div className="flex justify-end pt-2"><button className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white gradient-primary hover:opacity-90 transition-opacity shadow-sm"><Save className="w-4 h-4" />บันทึกสไตล์</button></div>
+      <div className="flex items-center justify-end gap-3 pt-2">
+        {updateStyleMutation.isSuccess && <span className="text-xs text-emerald-600 flex items-center gap-1"><Check className="w-3.5 h-3.5" />บันทึกสไตล์แล้ว</span>}
+        <button onClick={handleSaveStyle} disabled={updateStyleMutation.isPending} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white gradient-primary hover:opacity-90 transition-opacity shadow-sm disabled:opacity-50">
+          {updateStyleMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          บันทึกสไตล์
+        </button>
+      </div>
     </div>
   );
 }
 
-function LineOATab() {
-  const [channelId, setChannelId] = useState(""); const [channelSecret, setChannelSecret] = useState(""); const [accessToken, setAccessToken] = useState(""); const [connected] = useState(false);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function LineOATab({ shopId, shop }: { shopId: string; shop: any }) {
+  const [channelId, setChannelId] = useState(shop.lineChannelId || "");
+  const [channelSecret, setChannelSecret] = useState(shop.lineChannelSecret || "");
+  const [accessToken, setAccessToken] = useState(shop.lineAccessToken || "");
+  const connected = shop.lineConnected || false;
+
+  const connectMutation = trpc.shop.connectLine.useMutation();
+  const setShop = useShopStore((s) => s.setShop);
+
+  const handleConnect = async () => {
+    await connectMutation.mutateAsync({
+      lineChannelId: channelId,
+      lineChannelSecret: channelSecret,
+      lineAccessToken: accessToken,
+    });
+    setShop({ ...shop, lineChannelId: channelId, lineChannelSecret: channelSecret, lineAccessToken: accessToken, lineConnected: true });
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div><h3 className="font-display font-semibold text-dark mb-1">เชื่อมต่อ LINE OA</h3><p className="text-xs text-dark-muted">เชื่อม LINE Official Account เพื่อให้ AI ตอบแชทอัตโนมัติ</p></div>
@@ -128,23 +231,30 @@ function LineOATab() {
         <div><p className="text-sm font-medium text-dark">วิธีหา credentials</p><p className="text-xs text-dark-muted mt-1">ไปที่ <a href="https://developers.line.biz" target="_blank" rel="noopener" className="text-secondary underline">LINE Developers Console</a> → เลือก Provider → เลือก Channel</p></div>
       </div>
       {connected && <div className="p-4 bg-success/10 rounded-xl flex items-center gap-3"><div className="w-3 h-3 bg-success rounded-full animate-pulse" /><span className="text-sm font-medium text-success">เชื่อมต่อสำเร็จ</span></div>}
+      {connectMutation.isSuccess && !connected && <div className="p-4 bg-success/10 rounded-xl flex items-center gap-3"><Check className="w-4 h-4 text-success" /><span className="text-sm font-medium text-success">เชื่อมต่อสำเร็จ!</span></div>}
+      {connectMutation.isError && <div className="p-4 bg-red-50 rounded-xl flex items-center gap-3"><AlertCircle className="w-4 h-4 text-red-500" /><span className="text-sm font-medium text-red-600">เชื่อมต่อไม่สำเร็จ กรุณาตรวจสอบ credentials</span></div>}
       <div className="flex items-center gap-3">
-        <button className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white gradient-primary hover:opacity-90 transition-opacity shadow-sm"><Save className="w-4 h-4" />{connected ? "อัปเดต" : "เชื่อมต่อ"}</button>
+        <button onClick={handleConnect} disabled={connectMutation.isPending || !channelId || !channelSecret || !accessToken} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white gradient-primary hover:opacity-90 transition-opacity shadow-sm disabled:opacity-50">
+          {connectMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          {connected ? "อัปเดต" : "เชื่อมต่อ"}
+        </button>
         {connected && <button className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium text-secondary border border-secondary/30 hover:bg-secondary/5 transition-colors"><TestTube className="w-4 h-4" />ทดสอบ</button>}
       </div>
     </div>
   );
 }
 
-function PlanTab() {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function PlanTab({ shop }: { shop: any }) {
   const plans = [
     { name: "Starter", price: "1,490", features: ["Chat Brain", "Insight Dashboard", "1,000 msg/เดือน"], popular: false },
     { name: "Pro", price: "2,490", features: ["+ Content Brain", "+ Sales Brain", "+ Customer Memory", "ไม่จำกัด msg"], popular: true },
     { name: "Business", price: "3,490", features: ["+ Multi-branch", "+ Staff accounts", "+ API", "+ Custom AI Training"], popular: false },
   ];
+  const currentPlan = shop.plan || "trial";
   return (
     <div className="p-6 space-y-6">
-      <div><h3 className="font-display font-semibold text-dark mb-1">แพลนปัจจุบัน</h3><p className="text-xs text-dark-muted">คุณกำลังใช้แพลน <span className="text-primary font-semibold">ทดลองใช้ฟรี</span> (60 วัน)</p></div>
+      <div><h3 className="font-display font-semibold text-dark mb-1">แพลนปัจจุบัน</h3><p className="text-xs text-dark-muted">คุณกำลังใช้แพลน <span className="text-primary font-semibold">{currentPlan === "trial" ? "ทดลองใช้ฟรี" : currentPlan}</span></p></div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {plans.map((plan) => (
           <div key={plan.name} className={`relative rounded-xl border-2 p-5 transition-all ${plan.popular ? "border-primary shadow-md" : "border-surface-container-high hover:border-primary/30"}`}>

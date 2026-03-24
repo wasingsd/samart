@@ -1,4 +1,4 @@
-# 🧬 Panya — Per-Shop AI Personalization Architecture
+# 🧬 SAMART — Per-Shop AI Personalization Architecture
 
 > คำถามหลัก: เมื่อมีลูกค้า subscribe จริง ทำยังไงให้ AI "รู้จัก" ร้านนั้นๆ โดยเฉพาะ?
 
@@ -286,7 +286,7 @@ async function startFineTuning(shopId: string) {
 
   const tuningJob = await geminiClient.tunedModels.create({
     baseModel: 'models/gemini-1.5-flash-001',
-    displayName: `panya-shop-${shopId}`,
+    displayName: `samart-shop-${shopId}`,
     tuningTask: {
       trainingData: {
         examples: { examples: dataset }
@@ -405,7 +405,7 @@ shops/{shopId}/knowledgeBase/...     // RAG ของร้านนี้เท
 shops/{shopId}/learnedPatterns/...   // Patterns ของร้านนี้เท่านั้น
 
 // Fine-tuned model ก็แยกกัน
-tunedModels/panya-shop-{shopId}      // Model เฉพาะของแต่ละร้าน
+tunedModels/samart-shop-{shopId}      // Model เฉพาะของแต่ละร้าน
 
 // Embeddings ไม่เคย share ข้ามร้าน
 // ลูกค้าร้าน A ไม่มีทางเห็นข้อมูลร้าน B

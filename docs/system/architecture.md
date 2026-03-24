@@ -1,4 +1,4 @@
-# 🏗️ Panya — System Architecture
+# 🏗️ SAMART — System Architecture
 
 ---
 
@@ -6,7 +6,7 @@
 
 ```
                          ┌─────────────────────────────────────────┐
-                         │              PANYA PLATFORM              │
+                         │              SAMART PLATFORM              │
                          └─────────────────────────────────────────┘
                                             │
                ┌────────────────────────────┼────────────────────────────┐
@@ -68,7 +68,7 @@ GET    /api/public/menu/:shopId  → Public menu (no auth)
 ```typescript
 // AI Orchestrator — รับ request และ route ไปยัง brain ที่ถูกต้อง
 
-class PanyaOrchestrator {
+class SAMARTOrchestrator {
   salesBrain: SalesBrain       // วิเคราะห์ยอดขาย
   contentBrain: ContentBrain   // สร้างคอนเทนต์
   chatBrain: ChatBrain         // ตอบแชท LINE

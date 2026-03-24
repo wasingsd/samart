@@ -1,9 +1,9 @@
 ---
-name: Panya Development Skill
-description: คู่มือพัฒนาโปรเจค Panya — AI Shop Brain สำหรับร้านค้าในเชียงใหม่ รวมถึงกฎภาษาไทย, tech stack, architecture patterns, และ coding conventions
+name: SAMART Development Skill
+description: คู่มือพัฒนาโปรเจค SAMART — AI Shop Brain สำหรับร้านค้าในเชียงใหม่ รวมถึงกฎภาษาไทย, tech stack, architecture patterns, และ coding conventions
 ---
 
-# 🧠 Panya Development Skill
+# 🧠 SAMART Development Skill
 
 ## ⚡ กฎสำคัญ: ภาษาไทย
 
@@ -23,16 +23,16 @@ description: คู่มือพัฒนาโปรเจค Panya — AI Sh
 
 ## 📋 ภาพรวมโปรเจค
 
-**Panya (ปัญญา)** คือแพลตฟอร์ม SaaS ที่ใช้ AI เป็นหัวใจหลัก ทำหน้าที่เป็น "สมองธุรกิจ" ให้กับร้านค้าและร้านอาหารขนาดเล็ก-กลาง ในเชียงใหม่
+**SAMART (สามารถ)** คือแพลตฟอร์ม SaaS ที่ใช้ AI เป็นหัวใจหลัก ทำหน้าที่เป็น "สมองธุรกิจ" ให้กับร้านค้าและร้านอาหารขนาดเล็ก-กลาง ในเชียงใหม่
 
 ### 4 Brain Modules
 
 | Module | ชื่อภายใน | หน้าที่ | AI Model |
 |--------|-----------|---------|----------|
-| 🔢 Sales Brain | Panya **Sense** | วิเคราะห์ยอดขาย คาดการณ์ demand แจ้งเตือนสต็อก | Gemini 2.0 Pro |
-| ✍️ Content Brain | Panya **Create** | สร้างโพสต์ Facebook/LINE รูปภาพ โปรโมชัน | Gemini 2.0 Pro + Imagen 3 |
-| 💬 Chat Brain | Panya **Talk** | LINE OA chatbot รับออเดอร์ ตอบคำถาม | Gemini 2.0 Flash |
-| 📊 Insight Brain | Panya **Guide** | Daily AI briefing แนะนำ action รายวัน | Gemini 2.0 Pro |
+| 🔢 Sales Brain | SAMART **Sense** | วิเคราะห์ยอดขาย คาดการณ์ demand แจ้งเตือนสต็อก | Gemini 2.0 Pro |
+| ✍️ Content Brain | SAMART **Create** | สร้างโพสต์ Facebook/LINE รูปภาพ โปรโมชัน | Gemini 2.0 Pro + Imagen 3 |
+| 💬 Chat Brain | SAMART **Talk** | LINE OA chatbot รับออเดอร์ ตอบคำถาม | Gemini 2.0 Flash |
+| 📊 Insight Brain | SAMART **Guide** | Daily AI briefing แนะนำ action รายวัน | Gemini 2.0 Pro |
 
 ### Target Market
 - **เมือง**: เชียงใหม่ (เริ่มต้น) → ภาคเหนือ → ทั้งประเทศ

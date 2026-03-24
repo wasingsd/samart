@@ -1,17 +1,17 @@
-# 🎨 Panya — Brand Identity
+# 🎨 SAMART — Brand Identity
 
 ---
 
 ## ชื่อแบรนด์
 
-### `Panya` — ปัญญา
+### `SAMART` — ปัญญา
 
 | | รายละเอียด |
 |--|------------|
 | **ที่มา** | คำไทย "ปัญญา" (Panyā) แปลว่า ปัญญา, ความฉลาด, wisdom |
 | **ออกเสียง** | /pan-yah/ |
 | **ความหมายเชิงแบรนด์** | ปัญญาที่ใช้งานได้จริง — ไม่ใช่ AI ที่แค่ฉลาด แต่ทำให้ธุรกิจเติบโตได้ |
-| **Domain ideas** | `panya.ai` / `getpanya.com` / `panya.co.th` |
+| **Domain ideas** | `samart.ai` / `getsamart.com` / `samart.co.th` |
 
 ---
 
@@ -76,14 +76,14 @@ Linear: #1A237E → #00B4D8  (left to right)
 
 ```
   ╔══════════════════╗
-  ║  🧠  Panya       ║   ← icon + wordmark
+  ║  🧠  SAMART       ║   ← icon + wordmark
   ║      ปัญญา       ║   ← Thai subtitle (optional)
   ╚══════════════════╝
 
   Variations:
-  [🧠 Panya]          — Horizontal (primary)
+  [🧠 SAMART]          — Horizontal (primary)
   [🧠]                — Icon only (app icon, favicon)
-  [PANYA]             — All caps (merchandise, large format)
+  [SAMART]             — All caps (merchandise, large format)
 ```
 
 ### Icon concept
@@ -95,8 +95,8 @@ Linear: #1A237E → #00B4D8  (left to right)
 
 ### ✅ พูดแบบนี้
 - "วันนี้ยอดขายเยี่ยมมาก! กาแฟ Signature ขายได้ 3 เท่าของวันธรรมดา"
-- "Panya แนะนำว่า: เพิ่มสต็อกไก่ก่อนสุดสัปดาห์นะคะ ลูกค้ามักสั่งมากขึ้น 40%"
-- "ลูกค้าประจำ 12 คนยังไม่มา 2 สัปดาห์แล้ว อยากให้ Panya ส่ง LINE หาพวกเขาไหม?"
+- "SAMART แนะนำว่า: เพิ่มสต็อกไก่ก่อนสุดสัปดาห์นะคะ ลูกค้ามักสั่งมากขึ้น 40%"
+- "ลูกค้าประจำ 12 คนยังไม่มา 2 สัปดาห์แล้ว อยากให้ SAMART ส่ง LINE หาพวกเขาไหม?"
 
 ### ❌ อย่าพูดแบบนี้
 - "Data analytics pipeline ของคุณได้รับการ optimize แล้ว"
@@ -109,10 +109,10 @@ Linear: #1A237E → #00B4D8  (left to right)
 
 | Module | ชื่อ | ไอคอน | สี |
 |--------|------|-------|-----|
-| Sales Brain | Panya **Sense** | 🔢 | Indigo |
-| Content Brain | Panya **Create** | ✍️ | Teal |
-| Chat Brain | Panya **Talk** | 💬 | Amber |
-| Insight Brain | Panya **Guide** | 📊 | Green |
+| Sales Brain | SAMART **Sense** | 🔢 | Indigo |
+| Content Brain | SAMART **Create** | ✍️ | Teal |
+| Chat Brain | SAMART **Talk** | 💬 | Amber |
+| Insight Brain | SAMART **Guide** | 📊 | Green |
 
 ---
 
@@ -131,7 +131,7 @@ Linear: #1A237E → #00B4D8  (left to right)
 ในขณะที่ Grab และ LINE MAN เอากำไรจากทุก Order
 และ POS ทั่วไปแค่บันทึกข้อมูล —
 
-Panya ทำงานเพื่อร้านคุณ
+SAMART ทำงานเพื่อร้านคุณ
 วิเคราะห์ สร้างคอนเทนต์ ตอบแชท และบอกทางให้
 ทั้งหมดนี้ในราคาที่น้อยกว่าเงินเดือนพนักงานพาร์ทไทม์ 1 คน
 ```

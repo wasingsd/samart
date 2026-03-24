@@ -1,4 +1,4 @@
-# 🗄️ Panya — Database Schema (Firestore)
+# 🗄️ SAMART — Database Schema (Firestore)
 
 ---
 

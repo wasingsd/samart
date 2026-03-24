@@ -1,4 +1,4 @@
-# 🎨 Panya — UX/UI Flow Guide
+# 🎨 SAMART — UX/UI Flow Guide
 
 > เอกสารสำหรับออกแบบ UX/UI — อธิบาย flow, หน้าจอ, และ components ที่ต้องมี
 
@@ -7,7 +7,7 @@
 ## 📱 หน้าจอทั้งหมด (Sitemap)
 
 ```
-Panya App
+SAMART App
 ├── 🔓 Auth
 │   ├── /login
 │   └── /register
@@ -36,7 +36,7 @@ Panya App
 ### หน้าจอ: `/register`
 ```
 ┌────────────────────────────────────┐
-│  🧠 Panya                         │
+│  🧠 SAMART                         │
 │  "AI ที่รู้จักร้านคุณดีกว่าใคร"    │
 │                                    │
 │  ชื่อ-นามสกุล: [____________]     │
@@ -52,7 +52,7 @@ Panya App
 ### หน้าจอ: `/login`
 ```
 ┌────────────────────────────────────┐
-│  🧠 Panya                         │
+│  🧠 SAMART                         │
 │                                    │
 │  Email:     [____________]        │
 │  รหัสผ่าน: [____________]        │
@@ -475,7 +475,7 @@ Register → Firebase Auth → สร้าง users/{uid}
 │  [🔗 เชื่อมต่อ]                          │
 │                                          │
 │  สถานะ: 🟢 เชื่อมต่อแล้ว               │
-│  Webhook URL: https://panya.app/api/...  │
+│  Webhook URL: https://samart.app/api/...  │
 │  [🔄 ทดสอบ Webhook]                     │
 └──────────────────────────────────────────┘
 ```

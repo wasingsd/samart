@@ -19,18 +19,14 @@ import {
   X,
   Save,
   UploadCloud,
+  Loader2,
+  Check,
 } from "lucide-react";
+import { trpc } from "@/lib/trpc/client";
+import { useShopStore } from "@/stores/useShopStore";
 
 // Knowledge type definitions
 type KnowledgeType = "menu" | "faq" | "policy" | "promotion" | "about" | "freeform";
-
-interface KnowledgeItem {
-  id: string;
-  type: KnowledgeType;
-  title: string;
-  content: string;
-  isActive: boolean;
-}
 
 const typeConfig: Record<KnowledgeType, { icon: React.ElementType; label: string; color: string; bg: string; description: string }> = {
   menu: { icon: FileText, label: "เมนูสินค้า", color: "text-[#00B4D8]", bg: "bg-[#00B4D8]/10", description: "เมนู ราคา คำอธิบาย ส่วนผสม" },
@@ -41,11 +37,33 @@ const typeConfig: Record<KnowledgeType, { icon: React.ElementType; label: string
   freeform: { icon: MessageSquare, label: "ข้อมูลอื่นๆ", color: "text-gray-500", bg: "bg-gray-100", description: "ข้อมูลอื่นๆ ที่ AI ควรรู้" },
 };
 
-// Mock data (will be replaced with tRPC when connected)
-const mockItems: KnowledgeItem[] = [];
-
 export default function KnowledgePage() {
-  const [items] = useState<KnowledgeItem[]>(mockItems);
+  const shop = useShopStore((s) => s.shop);
+  const shopId = shop?.id ?? "";
+
+  // tRPC queries
+  const { data: items = [], isLoading } = trpc.knowledge.list.useQuery(
+    { shopId },
+    { enabled: !!shopId }
+  );
+  const { data: health } = trpc.knowledge.health.useQuery(
+    { shopId },
+    { enabled: !!shopId }
+  );
+
+  // tRPC mutations
+  const utils = trpc.useUtils();
+  const invalidate = () => {
+    utils.knowledge.list.invalidate({ shopId });
+    utils.knowledge.health.invalidate({ shopId });
+  };
+
+  const createMutation = trpc.knowledge.create.useMutation({ onSuccess: invalidate });
+  const deleteMutation = trpc.knowledge.delete.useMutation({ onSuccess: invalidate });
+  const updateMutation = trpc.knowledge.update.useMutation({ onSuccess: invalidate });
+  const freeformMutation = trpc.knowledge.addFreeform.useMutation({ onSuccess: invalidate });
+
+  // UI state
   const [searchQuery, setSearchQuery] = useState("");
   const [freeformText, setFreeformText] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
@@ -53,26 +71,80 @@ export default function KnowledgePage() {
   const [addTitle, setAddTitle] = useState("");
   const [addContent, setAddContent] = useState("");
 
-  // Calculate health
-  const totalDocs = items.filter((i) => i.isActive).length;
-  const typeCounts = items.reduce((acc, item) => {
-    if (item.isActive) acc[item.type] = (acc[item.type] || 0) + 1;
+  // Edit state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editContent, setEditContent] = useState("");
+
+  // Derived data
+  const activeItems = (items as Array<{ id: string; type: string; title: string; content: string; isActive: boolean }>).filter((i) => i.isActive);
+  const typeCounts = activeItems.reduce((acc, item) => {
+    acc[item.type] = (acc[item.type] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
-  const menuScore = Math.min((typeCounts.menu || 0) / 5, 1) * 30;
-  const faqScore = Math.min((typeCounts.faq || 0) / 3, 1) * 25;
-  const policyScore = Math.min((typeCounts.policy || 0) / 2, 1) * 15;
-  const promoScore = (typeCounts.promotion || 0) > 0 ? 10 : 0;
-  const aboutScore = (typeCounts.about || 0) > 0 ? 20 : 0;
-  const completionPercent = Math.round(menuScore + faqScore + policyScore + promoScore + aboutScore);
+  const completionPercent = health?.completionPercent ?? 0;
 
-  const filteredItems = items.filter(
-    (i) => i.isActive && (i.title.includes(searchQuery) || i.content.includes(searchQuery))
+  const filteredItems = activeItems.filter(
+    (i) => i.title.includes(searchQuery) || i.content.includes(searchQuery)
   );
 
   const healthColor = completionPercent < 30 ? "#EF4444" : completionPercent < 70 ? "#F59E0B" : "#10B981";
   const healthLabel = completionPercent < 30 ? "ต้องเพิ่มข้อมูล" : completionPercent < 70 ? "กำลังเรียนรู้" : "พร้อมทำงาน";
+
+  // Handlers
+  const handleCreate = async () => {
+    if (!addTitle || !addContent || !shopId) return;
+    await createMutation.mutateAsync({
+      shopId,
+      data: {
+        type: addType,
+        title: addTitle,
+        content: addContent,
+        keywords: [],
+        language: "th",
+      },
+    });
+    setShowAddModal(false);
+    setAddTitle("");
+    setAddContent("");
+  };
+
+  const handleDelete = async (docId: string) => {
+    if (!shopId) return;
+    await deleteMutation.mutateAsync({ shopId, docId });
+  };
+
+  const handleStartEdit = (item: { id: string; title: string; content: string }) => {
+    setEditingId(item.id);
+    setEditTitle(item.title);
+    setEditContent(item.content);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingId || !shopId) return;
+    await updateMutation.mutateAsync({
+      shopId,
+      docId: editingId,
+      data: { title: editTitle, content: editContent },
+    });
+    setEditingId(null);
+  };
+
+  const handleFreeform = async () => {
+    if (!freeformText.trim() || !shopId) return;
+    await freeformMutation.mutateAsync({ shopId, content: freeformText });
+    setFreeformText("");
+  };
+
+  // Loading state
+  if (!shopId) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px] text-gray-400">
+        <p>กรุณาสร้างร้านก่อนใช้งานศูนย์ความรู้</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -102,7 +174,7 @@ export default function KnowledgePage() {
             </div>
             <div>
               <h3 className="font-display font-semibold text-gray-900">ความสมบูรณ์ของ AI Brain</h3>
-              <p className="text-xs text-gray-500">{totalDocs} เอกสารทั้งหมด</p>
+              <p className="text-xs text-gray-500">{health?.totalDocs ?? 0} เอกสารทั้งหมด</p>
             </div>
           </div>
           <div className="text-right">
@@ -156,7 +228,12 @@ export default function KnowledgePage() {
               </div>
             </div>
 
-            {filteredItems.length === 0 ? (
+            {isLoading ? (
+              <div className="p-10 text-center">
+                <Loader2 className="w-8 h-8 text-gray-300 mx-auto mb-3 animate-spin" />
+                <p className="text-sm text-gray-400">กำลังโหลดข้อมูล...</p>
+              </div>
+            ) : filteredItems.length === 0 ? (
               <div className="p-10 text-center">
                 <Brain className="w-12 h-12 text-gray-200 mx-auto mb-4" />
                 <h4 className="font-display font-semibold text-gray-400 mb-1">ยังไม่มีข้อมูลใน AI Brain</h4>
@@ -174,8 +251,45 @@ export default function KnowledgePage() {
             ) : (
               <div className="divide-y divide-gray-50">
                 {filteredItems.map((item) => {
-                  const cfg = typeConfig[item.type];
+                  const cfg = typeConfig[(item.type as KnowledgeType)] || typeConfig.freeform;
                   const Icon = cfg.icon;
+                  const isEditing = editingId === item.id;
+
+                  if (isEditing) {
+                    return (
+                      <div key={item.id} className="px-5 py-4 space-y-3 bg-blue-50/30">
+                        <input
+                          type="text"
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-[#1A237E]/10"
+                        />
+                        <textarea
+                          value={editContent}
+                          onChange={(e) => setEditContent(e.target.value)}
+                          rows={3}
+                          className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-[#1A237E]/10 resize-none"
+                        />
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => setEditingId(null)}
+                            className="px-3 py-1.5 rounded-lg text-sm text-gray-500 hover:bg-gray-100 transition-colors"
+                          >
+                            ยกเลิก
+                          </button>
+                          <button
+                            onClick={handleSaveEdit}
+                            disabled={updateMutation.isPending}
+                            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium text-white bg-[#1A237E] hover:bg-[#1A237E]/90 transition-colors disabled:opacity-50"
+                          >
+                            {updateMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                            บันทึก
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+
                   return (
                     <div
                       key={item.id}
@@ -189,10 +303,17 @@ export default function KnowledgePage() {
                         <p className="text-xs text-gray-400 truncate mt-0.5">{item.content}</p>
                       </div>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
+                        <button
+                          onClick={() => handleStartEdit(item)}
+                          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                        >
                           <Edit3 className="w-3.5 h-3.5" />
                         </button>
-                        <button className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors">
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          disabled={deleteMutation.isPending}
+                          className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
+                        >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
@@ -224,12 +345,22 @@ export default function KnowledgePage() {
               className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-100 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-[#1A237E]/10 focus:border-[#1A237E]/30 transition-all resize-none"
             />
             <button
-              disabled={!freeformText.trim()}
+              disabled={!freeformText.trim() || freeformMutation.isPending}
+              onClick={handleFreeform}
               className="w-full mt-3 inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-[#1A237E] to-[#00B4D8] hover:opacity-90 transition-opacity shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <Sparkles className="w-4 h-4" />
-              บันทึกและจัดหมวดหมู่
+              {freeformMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Sparkles className="w-4 h-4" />
+              )}
+              {freeformMutation.isPending ? "กำลังบันทึก..." : "บันทึกและจัดหมวดหมู่"}
             </button>
+            {freeformMutation.isSuccess && (
+              <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1">
+                <Check className="w-3.5 h-3.5" /> บันทึกสำเร็จ!
+              </p>
+            )}
           </div>
 
           {/* File Upload */}
@@ -359,11 +490,16 @@ export default function KnowledgePage() {
                 ยกเลิก
               </button>
               <button
-                disabled={!addTitle || !addContent}
+                disabled={!addTitle || !addContent || createMutation.isPending}
+                onClick={handleCreate}
                 className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-[#1A237E] to-[#00B4D8] hover:opacity-90 transition-opacity shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <Save className="w-4 h-4" />
-                บันทึก
+                {createMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
+                {createMutation.isPending ? "กำลังบันทึก..." : "บันทึก"}
               </button>
             </div>
           </div>

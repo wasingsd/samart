@@ -1,10 +1,10 @@
-# 📋 Panya — Business Plan
+# 📋 SAMART — Business Plan
 
 ---
 
 ## 1. Business Overview
 
-**ชื่อบริษัท**: Panya (ปัญญา)
+**ชื่อบริษัท**: SAMART (ปัญญา)
 **ประเภทธุรกิจ**: SaaS (Software as a Service)
 **ตลาดเป้าหมาย**: ร้านค้า SME ในเชียงใหม่และภาคเหนือ
 **โมเดลธุรกิจ**: Monthly/Annual Subscription
@@ -27,13 +27,13 @@
 - ใช้ POS ทั่วไป → แค่บันทึกข้อมูล ไม่ได้วิเคราะห์
 - จ้างพนักงานทำ marketing → ค่าใช้จ่าย 10,000-15,000 บาท/เดือน
 
-**Panya แก้ทั้ง 3 ปัญหาในราคา 2,490 บาท/เดือน**
+**SAMART แก้ทั้ง 3 ปัญหาในราคา 2,490 บาท/เดือน**
 
 ---
 
 ## 3. Solution
 
-Panya เป็น AI-native platform ที่ทำหน้าที่เป็น "สมองธุรกิจ" ผ่าน 4 modules:
+SAMART เป็น AI-native platform ที่ทำหน้าที่เป็น "สมองธุรกิจ" ผ่าน 4 modules:
 
 ```
 🔢 Sales Brain     → วิเคราะห์ยอดขาย คาดการณ์ demand
@@ -64,7 +64,7 @@ Panya เป็น AI-native platform ที่ทำหน้าที่เป
 
 ## 5. Competitive Analysis
 
-| | Grab/LINE MAN | POS ทั่วไป | ChatGPT | **Panya** |
+| | Grab/LINE MAN | POS ทั่วไป | ChatGPT | **SAMART** |
 |--|--------------|-----------|---------|-----------|
 | AI Brain | ❌ | ❌ | ⚠️ DIY | ✅ Built-in |
 | Content AI | ❌ | ❌ | ⚠️ DIY | ✅ Auto |

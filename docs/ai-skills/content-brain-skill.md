@@ -1,4 +1,4 @@
-# ✍️ Content Brain Skill — Panya AI
+# ✍️ Content Brain Skill — SAMART AI
 
 > **Module:** Create (สร้าง)
 > **Models:** Gemini 2.0 Pro (text), Gemini Imagen 3 (image)

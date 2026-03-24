@@ -53,6 +53,14 @@ export const shopRouter = router({
       });
       await batch.commit();
 
+      // Auto-build knowledge from onboarding data (fire-and-forget)
+      try {
+        const { buildFromOnboarding } = await import("@/lib/ai/knowledge-builder");
+        buildFromOnboarding(shopRef.id).catch(console.error);
+      } catch {
+        // Non-critical — don't block shop creation
+      }
+
       return { ...shopData, id: shopRef.id };
     }),
 

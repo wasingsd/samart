@@ -13,7 +13,7 @@
 ## Tasks
 
 ### Day 1-2: Project Setup
-- [ ] `npx create-next-app@latest panya --typescript --tailwind --app`
+- [ ] `npx create-next-app@latest samart --typescript --tailwind --app`
 - [ ] Setup tRPC (server + client)
 - [ ] Firebase project สร้าง + connect
 - [ ] Firebase Auth setup (email/password)
@@ -104,7 +104,7 @@ export const createContext = async (opts: CreateNextContextOptions) => {
 
 ## Blockers / Questions
 - [ ] ชื่อ LINE OA ที่จะใช้ทดสอบ: สร้างบัญชีทดสอบก่อน
-- [ ] Domain สำหรับ Panya: ตรวจสอบ `panya.ai` / `getpanya.com`
+- [ ] Domain สำหรับ SAMART: ตรวจสอบ `samart.ai` / `getsamart.com`
 - [ ] Firebase plan: เริ่มด้วย Spark (ฟรี) → upgrade เมื่อมีลูกค้าจริง
 
 ---

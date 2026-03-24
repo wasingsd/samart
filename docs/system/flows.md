@@ -1,6 +1,6 @@
-# 🔄 Panya — System Flow Diagrams
+# 🔄 SAMART — System Flow Diagrams
 
-> เอกสารนี้แสดง flow หลักของระบบ Panya ทั้งในมุม Business Process และ Technical Execution
+> เอกสารนี้แสดง flow หลักของระบบ SAMART ทั้งในมุม Business Process และ Technical Execution
 
 ---
 
@@ -65,10 +65,10 @@
 │  (จาก LINE Developers Console)                                          │
 │       │                                                                 │
 │       ▼                                                                 │
-│  Panya encrypt + บันทึกลง Firestore                                    │
+│  SAMART encrypt + บันทึกลง Firestore                                    │
 │       │                                                                 │
 │       ▼                                                                 │
-│  ตั้ง Webhook URL: https://panya.app/api/webhook/line                  │
+│  ตั้ง Webhook URL: https://samart.app/api/webhook/line                  │
 │       │                                                                 │
 │       ▼                                                                 │
 │  ส่ง test message ผ่าน LINE API → ยืนยัน webhook ทำงาน               │

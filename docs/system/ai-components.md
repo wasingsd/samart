@@ -1,10 +1,10 @@
-# 🤖 Panya — AI Components Specification
+# 🤖 SAMART — AI Components Specification
 
 ---
 
 ## Overview
 
-Panya ประกอบด้วย 4 AI Brain modules ที่ทำงานเชื่อมกัน ทุก module ใช้ Google Gemini เป็นฐาน แต่มี context, prompt, และ workflow ที่แตกต่างกันตามหน้าที่
+SAMART ประกอบด้วย 4 AI Brain modules ที่ทำงานเชื่อมกัน ทุก module ใช้ Google Gemini เป็นฐาน แต่มี context, prompt, และ workflow ที่แตกต่างกันตามหน้าที่
 
 ```
 ShopContext (ข้อมูลร้าน)
@@ -17,7 +17,7 @@ ShopContext (ข้อมูลร้าน)
 
 ---
 
-## 1. Sales Brain (Panya Sense)
+## 1. Sales Brain (SAMART Sense)
 
 ### หน้าที่
 วิเคราะห์ข้อมูลยอดขายและคาดการณ์อนาคต
@@ -72,7 +72,7 @@ const SALES_BRAIN_PROMPT = `
 
 ---
 
-## 2. Content Brain (Panya Create)
+## 2. Content Brain (SAMART Create)
 
 ### หน้าที่
 สร้างคอนเทนต์ marketing อัตโนมัติสำหรับ Facebook, LINE, Instagram
@@ -136,7 +136,7 @@ interface ScheduledPost {
 
 ---
 
-## 3. Chat Brain (Panya Talk)
+## 3. Chat Brain (SAMART Talk)
 
 ### หน้าที่
 LINE OA chatbot ที่เข้าใจบริบทร้านค้า รับออเดอร์ ตอบคำถาม และจำลูกค้า
@@ -221,7 +221,7 @@ ${formatShopInfo(shop)}
 
 ---
 
-## 4. Insight Brain (Panya Guide)
+## 4. Insight Brain (SAMART Guide)
 
 ### หน้าที่
 สร้าง Daily Briefing และ actionable recommendations รายวัน

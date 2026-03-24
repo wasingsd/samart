@@ -1,4 +1,4 @@
-# 💰 Panya — Pricing & Revenue Model
+# 💰 SAMART — Pricing & Revenue Model
 
 ---
 
@@ -11,8 +11,8 @@
 
 | Feature | รายละเอียด |
 |---------|------------|
-| Panya **Talk** (Chat Brain) | LINE OA chatbot พื้นฐาน รับออเดอร์ + ตอบ FAQ |
-| Panya **Guide** (Insight) | Dashboard ยอดขายรายวัน + weekly AI summary |
+| SAMART **Talk** (Chat Brain) | LINE OA chatbot พื้นฐาน รับออเดอร์ + ตอบ FAQ |
+| SAMART **Guide** (Insight) | Dashboard ยอดขายรายวัน + weekly AI summary |
 | LINE OA Connection | 1 บัญชี |
 | Products/Menu | สูงสุด 50 รายการ |
 | AI messages | 1,000 ข้อความ/เดือน |
@@ -29,9 +29,9 @@
 
 | Feature | รายละเอียด |
 |---------|------------|
-| Panya **Create** (Content Brain) | สร้างโพสต์ Facebook/LINE อัตโนมัติ 30 โพสต์/เดือน |
-| Panya **Create** — Image AI | สร้างรูปโฆษณาด้วย Gemini Imagen |
-| Panya **Sense** (Sales Brain) | Sales forecast 30 วัน + stock alert |
+| SAMART **Create** (Content Brain) | สร้างโพสต์ Facebook/LINE อัตโนมัติ 30 โพสต์/เดือน |
+| SAMART **Create** — Image AI | สร้างรูปโฆษณาด้วย Gemini Imagen |
+| SAMART **Sense** (Sales Brain) | Sales forecast 30 วัน + stock alert |
 | Customer Memory | จำประวัติลูกค้า + follow-up อัตโนมัติ |
 | AI messages | ไม่จำกัด |
 | Products/Menu | ไม่จำกัด |
@@ -101,6 +101,6 @@
 
 ## Pricing Philosophy
 
-1. **ราคาต้องถูกกว่าเงินเดือนพนักงาน 1 คน** — พนักงาน part-time เชียงใหม่ได้ ~10,000-12,000 บาท/เดือน Panya Pro แค่ 2,490 บาท
-2. **ราคาต้องน้อยกว่าค่าคอมมิชชัน Grab** — ถ้าร้านขายผ่าน Grab 50,000 บาท/เดือน โดนหัก 30% = 15,000 บาท Panya ช่วยให้ลูกค้ามาสั่งตรง ประหยัดได้มากกว่า 10 เท่า
+1. **ราคาต้องถูกกว่าเงินเดือนพนักงาน 1 คน** — พนักงาน part-time เชียงใหม่ได้ ~10,000-12,000 บาท/เดือน SAMART Pro แค่ 2,490 บาท
+2. **ราคาต้องน้อยกว่าค่าคอมมิชชัน Grab** — ถ้าร้านขายผ่าน Grab 50,000 บาท/เดือน โดนหัก 30% = 15,000 บาท SAMART ช่วยให้ลูกค้ามาสั่งตรง ประหยัดได้มากกว่า 10 เท่า
 3. **Annual discount 20%** — จูงใจให้จ่ายรายปี ลด churn

@@ -1,4 +1,4 @@
-# ✅ Panya — MVP Launch Checklist
+# ✅ SAMART — MVP Launch Checklist
 
 > ใช้ checklist นี้ก่อน launch จริงกับลูกค้าคนแรก
 
@@ -118,7 +118,7 @@
 - [ ] Resend domain verified
 - [ ] Welcome email ส่งเมื่อ register
 - [ ] Trial reminder email (วันที่ 50 และ 58 ของ trial)
-- [ ] LINE OA ของ Panya พร้อม support ลูกค้า
+- [ ] LINE OA ของ SAMART พร้อม support ลูกค้า
 
 ---
 

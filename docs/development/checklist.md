@@ -1,4 +1,4 @@
-# ✅ Panya — แผนพัฒนาละเอียด + Checklist
+# ✅ SAMART — แผนพัฒนาละเอียด + Checklist
 
 > แผนรายวัน Phase 1: MVP Foundation (42 วัน / 6 สัปดาห์)
 > ทุกข้อเรียงตาม dependency — ทำจากบนลงล่าง
@@ -52,7 +52,7 @@
 - [ ] สร้าง `src/app/layout.tsx` — Root layout
   - `<html lang="th">`
   - Google Fonts link
-  - Metadata: title "Panya — AI สมองร้านค้า"
+  - Metadata: title "SAMART — AI สมองร้านค้า"
 
 ### Day 3: tRPC Setup
 

@@ -1,4 +1,4 @@
-# ⚙️ Panya — Tech Stack
+# ⚙️ SAMART — Tech Stack
 
 ---
 
@@ -6,7 +6,7 @@
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│                   PANYA TECH STACK                   │
+│                   SAMART TECH STACK                   │
 ├──────────────┬───────────────────────────────────────┤
 │  Frontend    │  Next.js 15 · TypeScript · Tailwind   │
 │  State       │  Zustand · React Query (tRPC)          │
@@ -132,7 +132,7 @@ async function buildContext(shopId: string, query: string) {
 
 ```typescript
 // LINE Messaging API + LIFF
-// ทุกร้านค้าจะ connect LINE OA ของตัวเองกับ Panya
+// ทุกร้านค้าจะ connect LINE OA ของตัวเองกับ SAMART
 
 // Webhook Handler
 app.post('/api/webhook/line', async (req, res) => {

@@ -1,4 +1,4 @@
-# 🔢 Sales Brain Skill — Panya AI
+# 🔢 Sales Brain Skill — SAMART AI
 
 > **Module:** Sense (รู้สึก)
 > **Model:** Gemini 2.0 Pro

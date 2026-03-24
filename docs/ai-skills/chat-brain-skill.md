@@ -1,4 +1,4 @@
-# 💬 Chat Brain Skill — Panya AI
+# 💬 Chat Brain Skill — SAMART AI
 
 > **Module:** Talk (พูด)
 > **Model:** Gemini 2.0 Flash

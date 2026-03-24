@@ -1,10 +1,10 @@
-# 🔌 Panya — API Design
+# 🔌 SAMART — API Design
 
 ---
 
 ## API Architecture
 
-Panya ใช้ **tRPC** สำหรับ internal API (dashboard ↔ server) และ **REST** สำหรับ webhooks และ public endpoints
+SAMART ใช้ **tRPC** สำหรับ internal API (dashboard ↔ server) และ **REST** สำหรับ webhooks และ public endpoints
 
 ```
 ┌────────────────────────────────────┐
