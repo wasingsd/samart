@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Store, Sparkles, MessageCircle, CreditCard, Save, TestTube, ExternalLink, ShieldAlert, Plus, X, Loader2, Check, AlertCircle } from "lucide-react";
+import { Store, Sparkles, MessageCircle, CreditCard, Save, TestTube, ExternalLink, ShieldAlert, Plus, X, Loader2, Check, AlertCircle, Pencil } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { useShopStore } from "@/stores/useShopStore";
 
@@ -16,11 +16,30 @@ const tabs: { id: TabId; label: string; icon: React.ElementType }[] = [
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<TabId>("shop");
   const shop = useShopStore((s) => s.shop);
+  const shopLoading = useShopStore((s) => s.loading);
+
+  if (shopLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+        <p className="text-sm text-gray-400">กำลังโหลดข้อมูลร้าน...</p>
+      </div>
+    );
+  }
 
   if (!shop) {
     return (
-      <div className="flex items-center justify-center min-h-[400px] text-gray-400">
-        <p>กำลังโหลดข้อมูลร้าน...</p>
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center">
+          <Store className="w-8 h-8 text-gray-300" />
+        </div>
+        <div>
+          <h3 className="text-lg font-display font-bold text-gray-900">ยังไม่มีข้อมูลร้านค้า</h3>
+          <p className="text-sm text-gray-500 mt-1">กรุณาตั้งค่าร้านค้าก่อนใช้งาน</p>
+        </div>
+        <a href="/onboarding" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-[#1A237E] to-[#00B4D8] hover:opacity-90 transition-all shadow-md">
+          ตั้งค่าร้านค้า →
+        </a>
       </div>
     );
   }
@@ -51,11 +70,14 @@ export default function SettingsPage() {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function ShopInfoTab({ shopId, shop }: { shopId: string; shop: any }) {
   const [name, setName] = useState(shop.name || "");
-  const [category, setCategory] = useState(shop.category || "restaurant");
+  const [category, setCategory] = useState(shop.category || "food");
   const [phone, setPhone] = useState(shop.phone || "");
   const [address, setAddress] = useState(shop.address || "");
 
-  const updateMutation = trpc.shop.update.useMutation();
+  const utils = trpc.useUtils();
+  const updateMutation = trpc.shop.update.useMutation({
+    onSuccess: () => { utils.shop.getByOwner.invalidate(); }
+  });
   const setShop = useShopStore((s) => s.setShop);
 
   const handleSave = async () => {
@@ -69,7 +91,7 @@ function ShopInfoTab({ shopId, shop }: { shopId: string; shop: any }) {
       <div className="space-y-4">
         <div><label className="block text-xs font-bold tracking-wider text-dark-muted mb-1.5 uppercase">ชื่อร้าน</label><input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="ชื่อร้าน" className="w-full px-4 py-2.5 rounded-xl bg-surface-dim border border-surface-container-high text-sm text-dark outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" /></div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div><label className="block text-xs font-bold tracking-wider text-dark-muted mb-1.5 uppercase">ประเภท</label><select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full px-4 py-2.5 rounded-xl bg-surface-dim border border-surface-container-high text-sm text-dark outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none cursor-pointer"><option value="restaurant">ร้านอาหาร</option><option value="cafe">คาเฟ่</option><option value="retail">ร้านค้าปลีก</option><option value="service">บริการ</option></select></div>
+          <div><label className="block text-xs font-bold tracking-wider text-dark-muted mb-1.5 uppercase">ประเภทธุรกิจ</label><select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full px-4 py-2.5 rounded-xl bg-surface-dim border border-surface-container-high text-sm text-dark outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none cursor-pointer"><option value="food">ร้านอาหาร / เครื่องดื่ม</option><option value="retail">ร้านค้า / ค้าปลีก</option><option value="service">ธุรกิจบริการ</option></select></div>
           <div><label className="block text-xs font-bold tracking-wider text-dark-muted mb-1.5 uppercase">เบอร์โทร</label><input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="08X-XXX-XXXX" className="w-full px-4 py-2.5 rounded-xl bg-surface-dim border border-surface-container-high text-sm text-dark outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" /></div>
         </div>
         <div><label className="block text-xs font-bold tracking-wider text-dark-muted mb-1.5 uppercase">ที่อยู่</label><textarea value={address} onChange={(e) => setAddress(e.target.value)} placeholder="ที่อยู่ร้าน" rows={3} className="w-full px-4 py-2.5 rounded-xl bg-surface-dim border border-surface-container-high text-sm text-dark outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none" /></div>
@@ -205,8 +227,15 @@ function LineOATab({ shopId, shop }: { shopId: string; shop: any }) {
   const [channelSecret, setChannelSecret] = useState(shop.lineChannelSecret || "");
   const [accessToken, setAccessToken] = useState(shop.lineAccessToken || "");
   const connected = shop.lineConnected || false;
+  const [editing, setEditing] = useState(!connected);
 
-  const connectMutation = trpc.shop.connectLine.useMutation();
+  const utils = trpc.useUtils();
+  const connectMutation = trpc.shop.connectLine.useMutation({
+    onSuccess: () => {
+      utils.shop.getByOwner.invalidate();
+      setEditing(false);
+    }
+  });
   const setShop = useShopStore((s) => s.setShop);
 
   const handleConnect = async () => {
@@ -218,28 +247,90 @@ function LineOATab({ shopId, shop }: { shopId: string; shop: any }) {
     setShop({ ...shop, lineChannelId: channelId, lineChannelSecret: channelSecret, lineAccessToken: accessToken, lineConnected: true });
   };
 
+  const handleEdit = () => setEditing(true);
+  const handleCancelEdit = () => {
+    setChannelId(shop.lineChannelId || "");
+    setChannelSecret(shop.lineChannelSecret || "");
+    setAccessToken(shop.lineAccessToken || "");
+    setEditing(false);
+  };
+
+  // Mask value for read-only display
+  const maskValue = (val: string) => val ? "•".repeat(Math.min(val.length, 20)) : "—";
+
+  const inputBaseClass = "w-full px-4 py-2.5 rounded-xl text-sm outline-none transition-all font-mono";
+  const editableClass = `${inputBaseClass} bg-surface-dim border border-surface-container-high text-dark focus:ring-2 focus:ring-primary/20 focus:border-primary`;
+  const readOnlyClass = `${inputBaseClass} bg-gray-50 border border-gray-200 text-gray-500 cursor-not-allowed`;
+
   return (
     <div className="p-6 space-y-6">
-      <div><h3 className="font-display font-semibold text-dark mb-1">เชื่อมต่อ LINE OA</h3><p className="text-xs text-dark-muted">เชื่อม LINE Official Account เพื่อให้ AI ตอบแชทอัตโนมัติ</p></div>
-      <div className="space-y-4">
-        <div><label className="block text-xs font-bold tracking-wider text-dark-muted mb-1.5 uppercase">Channel ID</label><input type="text" value={channelId} onChange={(e) => setChannelId(e.target.value)} placeholder="Channel ID" className="w-full px-4 py-2.5 rounded-xl bg-surface-dim border border-surface-container-high text-sm text-dark outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono" /></div>
-        <div><label className="block text-xs font-bold tracking-wider text-dark-muted mb-1.5 uppercase">Channel Secret</label><input type="password" value={channelSecret} onChange={(e) => setChannelSecret(e.target.value)} placeholder="Channel Secret" className="w-full px-4 py-2.5 rounded-xl bg-surface-dim border border-surface-container-high text-sm text-dark outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono" /></div>
-        <div><label className="block text-xs font-bold tracking-wider text-dark-muted mb-1.5 uppercase">Access Token</label><input type="password" value={accessToken} onChange={(e) => setAccessToken(e.target.value)} placeholder="Long-lived Access Token" className="w-full px-4 py-2.5 rounded-xl bg-surface-dim border border-surface-container-high text-sm text-dark outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono" /></div>
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-display font-semibold text-dark mb-1">เชื่อมต่อ LINE OA</h3>
+          <p className="text-xs text-dark-muted">เชื่อม LINE Official Account เพื่อให้ AI ตอบแชทอัตโนมัติ</p>
+        </div>
+        {connected && !editing && (
+          <button onClick={handleEdit} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-primary border border-primary/20 hover:bg-primary/5 transition-colors">
+            <Pencil className="w-3.5 h-3.5" /> แก้ไข
+          </button>
+        )}
       </div>
+
+      <div className="space-y-4">
+        <div>
+          <label className="block text-xs font-bold tracking-wider text-dark-muted mb-1.5 uppercase">Channel ID</label>
+          {editing ? (
+            <input type="text" value={channelId} onChange={(e) => setChannelId(e.target.value)} placeholder="Channel ID" className={editableClass} />
+          ) : (
+            <div className={readOnlyClass}>{channelId || "—"}</div>
+          )}
+        </div>
+        <div>
+          <label className="block text-xs font-bold tracking-wider text-dark-muted mb-1.5 uppercase">Channel Secret</label>
+          {editing ? (
+            <input type="password" value={channelSecret} onChange={(e) => setChannelSecret(e.target.value)} placeholder="Channel Secret" className={editableClass} />
+          ) : (
+            <div className={readOnlyClass}>{maskValue(channelSecret)}</div>
+          )}
+        </div>
+        <div>
+          <label className="block text-xs font-bold tracking-wider text-dark-muted mb-1.5 uppercase">Access Token</label>
+          {editing ? (
+            <input type="password" value={accessToken} onChange={(e) => setAccessToken(e.target.value)} placeholder="Long-lived Access Token" className={editableClass} />
+          ) : (
+            <div className={readOnlyClass}>{maskValue(accessToken)}</div>
+          )}
+        </div>
+      </div>
+
       <div className="p-4 bg-surface-dim rounded-xl flex items-start gap-3">
         <ExternalLink className="w-5 h-5 text-secondary flex-shrink-0 mt-0.5" />
         <div><p className="text-sm font-medium text-dark">วิธีหา credentials</p><p className="text-xs text-dark-muted mt-1">ไปที่ <a href="https://developers.line.biz" target="_blank" rel="noopener" className="text-secondary underline">LINE Developers Console</a> → เลือก Provider → เลือก Channel</p></div>
       </div>
+
       {connected && <div className="p-4 bg-success/10 rounded-xl flex items-center gap-3"><div className="w-3 h-3 bg-success rounded-full animate-pulse" /><span className="text-sm font-medium text-success">เชื่อมต่อสำเร็จ</span></div>}
-      {connectMutation.isSuccess && !connected && <div className="p-4 bg-success/10 rounded-xl flex items-center gap-3"><Check className="w-4 h-4 text-success" /><span className="text-sm font-medium text-success">เชื่อมต่อสำเร็จ!</span></div>}
+      {connectMutation.isSuccess && <div className="p-4 bg-success/10 rounded-xl flex items-center gap-3"><Check className="w-4 h-4 text-success" /><span className="text-sm font-medium text-success">บันทึกสำเร็จ!</span></div>}
       {connectMutation.isError && <div className="p-4 bg-red-50 rounded-xl flex items-center gap-3"><AlertCircle className="w-4 h-4 text-red-500" /><span className="text-sm font-medium text-red-600">เชื่อมต่อไม่สำเร็จ กรุณาตรวจสอบ credentials</span></div>}
-      <div className="flex items-center gap-3">
-        <button onClick={handleConnect} disabled={connectMutation.isPending || !channelId || !channelSecret || !accessToken} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white gradient-primary hover:opacity-90 transition-opacity shadow-sm disabled:opacity-50">
-          {connectMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          {connected ? "อัปเดต" : "เชื่อมต่อ"}
-        </button>
-        {connected && <button className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium text-secondary border border-secondary/30 hover:bg-secondary/5 transition-colors"><TestTube className="w-4 h-4" />ทดสอบ</button>}
-      </div>
+
+      {editing && (
+        <div className="flex items-center gap-3">
+          <button onClick={handleConnect} disabled={connectMutation.isPending || !channelId || !channelSecret || !accessToken} className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold text-white gradient-primary hover:opacity-90 transition-opacity shadow-sm disabled:opacity-50">
+            {connectMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {connected ? "อัปเดต" : "เชื่อมต่อ"}
+          </button>
+          {connected && (
+            <button onClick={handleCancelEdit} className="px-5 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-100 transition-colors">
+              ยกเลิก
+            </button>
+          )}
+        </div>
+      )}
+
+      {!editing && connected && (
+        <div className="flex items-center gap-3">
+          <button className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium text-secondary border border-secondary/30 hover:bg-secondary/5 transition-colors"><TestTube className="w-4 h-4" />ทดสอบ</button>
+        </div>
+      )}
     </div>
   );
 }

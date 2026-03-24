@@ -5,21 +5,25 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   UtensilsCrossed,
+  ShoppingCart,
   MessageCircle,
-  BarChart3,
   Settings,
 } from "lucide-react";
-
-const mobileNavItems = [
-  { href: "/dashboard", label: "หน้าหลัก", icon: LayoutDashboard },
-  { href: "/dashboard/menu", label: "เมนู", icon: UtensilsCrossed },
-  { href: "/dashboard/chat-logs", label: "แชท", icon: MessageCircle },
-  { href: "/dashboard/analytics", label: "ยอดขาย", icon: BarChart3 },
-  { href: "/dashboard/settings", label: "ตั้งค่า", icon: Settings },
-];
+import { useShopStore } from "@/stores/useShopStore";
+import { getBusinessConfig } from "@/lib/businessConfig";
 
 export function MobileNav() {
   const pathname = usePathname();
+  const shop = useShopStore((s) => s.shop);
+  const biz = getBusinessConfig(shop?.category || "food");
+
+  const mobileNavItems = [
+    { href: "/dashboard", label: "หน้าหลัก", icon: LayoutDashboard },
+    { href: "/dashboard/menu", label: biz.itemLabel, icon: biz.icon },
+    { href: "/dashboard/pos", label: "POS", icon: ShoppingCart },
+    { href: "/dashboard/chat-logs", label: "แชท", icon: MessageCircle },
+    { href: "/dashboard/settings", label: "ตั้งค่า", icon: Settings },
+  ];
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard";

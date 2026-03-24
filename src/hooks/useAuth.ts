@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { useAuth as useAuthContext } from "@/contexts/AuthProvider";
-import { signInWithEmail, signUpWithEmail, signOut as firebaseSignOut } from "@/lib/firebase/auth";
+import {
+  signInWithEmail,
+  signUpWithEmail,
+  signInWithGoogle as firebaseSignInWithGoogle,
+  getLineLoginUrl,
+  signOut as firebaseSignOut,
+} from "@/lib/firebase/auth";
 
 export function useAuth() {
   const { user, loading: authLoading } = useAuthContext();
@@ -35,11 +41,30 @@ export function useAuth() {
     }
   };
 
+  const signInWithGoogle = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await firebaseSignInWithGoogle();
+      setLoading(false);
+      return res;
+    } catch (err: any) {
+      setError(err);
+      setLoading(false);
+      throw err;
+    }
+  };
+
+  const signInWithLine = () => {
+    // LINE uses redirect flow, not popup
+    const url = getLineLoginUrl();
+    window.location.href = url;
+  };
+
   const signOut = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Clear cache, wait for sign out
       await firebaseSignOut();
       setLoading(false);
     } catch (err: any) {
@@ -55,6 +80,8 @@ export function useAuth() {
     error,
     signIn,
     signUp,
+    signInWithGoogle,
+    signInWithLine,
     signOut,
   };
 }

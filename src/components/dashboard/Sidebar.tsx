@@ -15,8 +15,11 @@ import {
   ChevronLeft,
   X,
   Sparkles,
+  ShoppingCart,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useShopStore } from "@/stores/useShopStore";
+import { getBusinessConfig } from "@/lib/businessConfig";
 
 /*
   UX/UI Guidelines applied:
@@ -27,13 +30,6 @@ import { useAuth } from "@/hooks/useAuth";
   - Hover: subtle bg change
   - Sidebar width: 256px (Material standard)
 */
-
-const primaryNav = [
-  { href: "/dashboard", label: "หน้าหลัก", icon: LayoutDashboard },
-  { href: "/dashboard/menu", label: "เมนู", icon: UtensilsCrossed },
-  { href: "/dashboard/knowledge", label: "ศูนย์ AI", icon: Brain },
-  { href: "/dashboard/chat-logs", label: "แชท", icon: MessageCircle },
-];
 
 const secondaryNav = [
   { href: "/dashboard/content", label: "โพสต์", icon: Pencil },
@@ -51,6 +47,16 @@ interface SidebarProps {
 export function Sidebar({ isOpen, onClose, collapsed, onToggleCollapse }: SidebarProps) {
   const pathname = usePathname();
   const { signOut } = useAuth();
+  const shop = useShopStore((s) => s.shop);
+  const biz = getBusinessConfig(shop?.category || "food");
+
+  const primaryNav = [
+    { href: "/dashboard", label: "หน้าหลัก", icon: LayoutDashboard },
+    { href: "/dashboard/menu", label: biz.itemLabel, icon: biz.icon },
+    { href: "/dashboard/pos", label: "POS", icon: ShoppingCart },
+    { href: "/dashboard/knowledge", label: "ศูนย์ AI", icon: Brain },
+    { href: "/dashboard/chat-logs", label: "แชท", icon: MessageCircle },
+  ];
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard";

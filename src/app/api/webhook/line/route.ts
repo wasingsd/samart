@@ -96,45 +96,81 @@ async function handleEvent(
         );
       }
 
-      // Save customer
+      // Save/update customer via multi-channel upsert
       if (event.source.userId) {
         const profile = await getLineProfile(event.source.userId, accessToken);
         if (profile) {
-          await getDb()
+          const customersRef = getDb()
             .collection("shops")
             .doc(shopId)
-            .collection("customers")
-            .doc(event.source.userId)
-            .set(
-              {
-                lineUserId: event.source.userId,
-                displayName: profile.displayName,
-                pictureURL: profile.pictureUrl || "",
-                segment: "new",
-                totalSpent: 0,
-                orderCount: 0,
-                lastVisitAt: null,
-                preferences: [],
-                notes: "",
-                firstContactAt: new Date(),
-                updatedAt: new Date(),
+            .collection("customers");
+
+          // Search for existing customer with this LINE userId
+          const existing = await customersRef
+            .where("channels.line.userId", "==", event.source.userId)
+            .limit(1)
+            .get();
+
+          if (!existing.empty) {
+            // Update existing customer
+            await existing.docs[0].ref.update({
+              "channels.line.displayName": profile.displayName,
+              "channels.line.pictureURL": profile.pictureUrl || "",
+              "channels.line.lastContactAt": new Date(),
+              displayName: profile.displayName,
+              pictureURL: profile.pictureUrl || "",
+              updatedAt: new Date(),
+            });
+          } else {
+            // Create new customer (auto-ID, no phone yet)
+            await customersRef.add({
+              phone: "",
+              displayName: profile.displayName,
+              pictureURL: profile.pictureUrl || "",
+              channels: {
+                line: {
+                  userId: event.source.userId,
+                  displayName: profile.displayName,
+                  pictureURL: profile.pictureUrl || "",
+                  connectedAt: new Date(),
+                  lastContactAt: new Date(),
+                },
               },
-              { merge: true }
-            );
+              source: "line",
+              segment: "new",
+              totalSpent: 0,
+              orderCount: 0,
+              lastVisitAt: null,
+              preferences: [],
+              notes: "",
+              firstContactAt: new Date(),
+              updatedAt: new Date(),
+            });
+          }
         }
       }
       break;
 
     case "unfollow":
-      // Update customer segment
+      // Update customer segment — search by LINE userId
       if (event.source.userId) {
-        await getDb()
-          .collection("shops")
-          .doc(shopId)
-          .collection("customers")
-          .doc(event.source.userId)
-          .update({ segment: "dormant", updatedAt: new Date() })
-          .catch(() => {}); // Ignore if doc doesn't exist
+        try {
+          const unfollowSnap = await getDb()
+            .collection("shops")
+            .doc(shopId)
+            .collection("customers")
+            .where("channels.line.userId", "==", event.source.userId)
+            .limit(1)
+            .get();
+          if (!unfollowSnap.empty) {
+            await unfollowSnap.docs[0].ref.update({
+              segment: "dormant",
+              updatedAt: new Date(),
+            });
+          }
+        } catch {
+          // Ignore if doc doesn't exist
+        }
       }
       break;
   }
@@ -156,6 +192,8 @@ async function handleTextMessage(
 ) {
   let aiReply: string;
   let status: string = "pending";
+  let customerId: string | undefined;
+  let customerName: string | undefined;
 
   try {
     // 1. Check AI message quota
@@ -170,15 +208,18 @@ async function handleTextMessage(
       // 2. Call AI Chat Brain
       const { handleChatMessage } = await import("@/lib/ai/chat-brain");
 
-      // Get customer name if available
-      let customerName: string | undefined;
+      // Get customer name if available — search by LINE userId
       let customerSegment: string | undefined;
       try {
-        const customerDoc = await getDb()
+        const custSnap = await getDb()
           .collection("shops").doc(shopId)
-          .collection("customers").doc(userId).get();
-        if (customerDoc.exists) {
-          const c = customerDoc.data();
+          .collection("customers")
+          .where("channels.line.userId", "==", userId)
+          .limit(1)
+          .get();
+        if (!custSnap.empty) {
+          const c = custSnap.docs[0].data();
+          customerId = custSnap.docs[0].id;
           customerName = c?.displayName;
           customerSegment = c?.segment;
         }
@@ -215,10 +256,11 @@ async function handleTextMessage(
     .doc(shopId)
     .collection("conversations")
     .add({
-      customerLineUserId: userId,
-      customerName: "",
+      customerId: customerId || userId,
+      customerName: customerName || "",
       customerMessage: message,
       aiReply,
+      channel: "line",
       status,
       createdAt: new Date(),
     });

@@ -92,7 +92,7 @@ export const analyticsRouter = router({
 
       await docRef.set({
         id: docRef.id,
-        customerLineUserId: "manual",
+        customerId: "manual",
         items: [],
         totalAmount: input.amount,
         status: "completed",

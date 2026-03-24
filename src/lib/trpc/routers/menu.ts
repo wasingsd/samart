@@ -22,18 +22,21 @@ export const menuRouter = router({
     .input(z.object({ category: z.string().optional() }).optional())
     .query(async ({ ctx, input }) => {
       const shopId = await getShopId(ctx.user.uid);
-      let query = getDb()
+      let ref = getDb()
         .collection("shops")
         .doc(shopId)
-        .collection("menuItems")
-        .orderBy("sortOrder", "asc");
+        .collection("menuItems");
 
+      let snapshot;
       if (input?.category) {
-        query = query.where("category", "==", input.category);
+        snapshot = await ref.where("category", "==", input.category).get();
+      } else {
+        snapshot = await ref.get();
       }
 
-      const snapshot = await query.get();
-      return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const items = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      // Sort client-side to avoid Firestore index requirement
+      return items.sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
     }),
 
   /**
@@ -58,8 +61,25 @@ export const menuRouter = router({
    * เพิ่มเมนูใหม่
    */
   create: protectedProcedure
-    .input(MenuCreateSchema)
+    .input(
+      z.object({
+        name: z.string().min(1),
+        price: z.number().positive(),
+        category: z.string().min(1),
+        description: z.string().default(""),
+        imageURL: z.string().optional(),
+        allergens: z.array(z.string()).default([]),
+        calories: z.number().optional(),
+        tags: z.array(z.string()).default([]),
+        inStock: z.boolean().default(true),
+        sortOrder: z.number().default(0),
+        sku: z.string().optional(),
+        unit: z.string().optional(),
+        duration: z.number().optional(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
+      console.log("[menu.create] uid:", ctx.user.uid);
       const shopId = await getShopId(ctx.user.uid);
       const ref = getDb()
         .collection("shops")
@@ -67,14 +87,20 @@ export const menuRouter = router({
         .collection("menuItems")
         .doc();
 
+      // Clean undefined values for Firestore
+      const cleanInput = Object.fromEntries(
+        Object.entries(input).filter(([, v]) => v !== undefined)
+      );
+
       const data = {
-        ...input,
+        ...cleanInput,
         id: ref.id,
         createdAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
       };
 
       await ref.set(data);
+      console.log("[menu.create] OK id:", ref.id);
       return data;
     }),
 

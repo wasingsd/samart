@@ -58,11 +58,13 @@ export const StyleProfileSchema = z.object({
 });
 
 export const ShopCategorySchema = z.enum([
+  "food",
+  "retail",
+  "service",
+  // Legacy values for backward compat
   "restaurant",
   "cafe",
   "bakery",
-  "service",
-  "retail",
   "other",
 ]);
 
@@ -106,16 +108,21 @@ export type BusinessHours = z.infer<typeof BusinessHoursSchema>;
 // ===========================================
 
 export const MenuCreateSchema = z.object({
-  name: z.string().min(1, "กรุณากรอกชื่อเมนู"),
+  name: z.string().min(1, "กรุณากรอกชื่อ"),
   price: z.number().positive("ราคาต้องมากกว่า 0"),
   category: z.string().min(1, "กรุณาเลือกหมวดหมู่"),
   description: z.string(),
   imageURL: z.string().optional(),
-  allergens: z.array(z.string()),
+  allergens: z.array(z.string()).default([]),
   calories: z.number().optional(),
-  tags: z.array(z.string()),
+  tags: z.array(z.string()).default([]),
   inStock: z.boolean().default(true),
   sortOrder: z.number().default(0),
+  // Retail-specific
+  sku: z.string().optional(),
+  unit: z.string().optional(),
+  // Service-specific
+  duration: z.number().optional(), // minutes
 });
 
 export const MenuItemSchema = z.object({
@@ -125,11 +132,14 @@ export const MenuItemSchema = z.object({
   category: z.string(),
   description: z.string(),
   imageURL: z.string().optional(),
-  allergens: z.array(z.string()),
+  allergens: z.array(z.string()).default([]),
   calories: z.number().optional(),
-  tags: z.array(z.string()),
+  tags: z.array(z.string()).default([]),
   inStock: z.boolean(),
   sortOrder: z.number(),
+  sku: z.string().optional(),
+  unit: z.string().optional(),
+  duration: z.number().optional(),
   createdAt: z.any(),
   updatedAt: z.any(),
 });
@@ -193,10 +203,28 @@ export type KnowledgeHealth = z.infer<typeof KnowledgeHealthSchema>;
 
 export const CustomerSegmentSchema = z.enum(["new", "regular", "vip", "dormant"]);
 
-export const CustomerSchema = z.object({
-  lineUserId: z.string(),
+export const ChannelTypeSchema = z.enum(["line", "facebook", "instagram", "web"]);
+
+export const ChannelInfoSchema = z.object({
+  userId: z.string(),
   displayName: z.string(),
   pictureURL: z.string().optional(),
+  connectedAt: z.any(),   // Firestore Timestamp
+  lastContactAt: z.any(), // Firestore Timestamp
+});
+
+export const CustomerChannelsSchema = z.object({
+  line: ChannelInfoSchema.optional(),
+  facebook: ChannelInfoSchema.optional(),
+  instagram: ChannelInfoSchema.optional(),
+});
+
+export const CustomerSchema = z.object({
+  phone: z.string(),
+  displayName: z.string(),
+  pictureURL: z.string().optional(),
+  channels: CustomerChannelsSchema,
+  source: z.enum(["line", "facebook", "instagram", "web", "manual"]),
   segment: CustomerSegmentSchema,
   totalSpent: z.number(),
   orderCount: z.number(),
@@ -208,6 +236,16 @@ export const CustomerSchema = z.object({
 });
 
 export type CustomerDoc = z.infer<typeof CustomerSchema>;
+export type ChannelInfo = z.infer<typeof ChannelInfoSchema>;
+export type CustomerChannels = z.infer<typeof CustomerChannelsSchema>;
+
+export const CustomerCreateSchema = z.object({
+  phone: z.string().min(9, "กรุณากรอกเบอร์โทร"),
+  displayName: z.string().min(1, "กรุณากรอกชื่อ"),
+  notes: z.string().optional(),
+});
+
+export type CustomerCreateInput = z.infer<typeof CustomerCreateSchema>;
 
 // ===========================================
 // Order
@@ -223,11 +261,11 @@ export const OrderItemSchema = z.object({
 
 export const OrderSchema = z.object({
   id: z.string(),
-  customerLineUserId: z.string(),
+  customerId: z.string(), // phone or autoId — links to customer doc
   items: z.array(OrderItemSchema),
   totalAmount: z.number(),
   status: z.enum(["pending", "confirmed", "completed", "cancelled"]),
-  source: z.enum(["line_chat", "manual", "public_menu"]),
+  source: z.enum(["line_chat", "facebook", "instagram", "manual", "public_menu"]),
   notes: z.string().optional(),
   createdAt: z.any(),
   updatedAt: z.any(),
@@ -260,11 +298,12 @@ export type LearnedPatternDoc = z.infer<typeof LearnedPatternSchema>;
 
 export const ConversationSchema = z.object({
   id: z.string(),
-  customerLineUserId: z.string(),
+  customerId: z.string(), // phone or autoId — links to customer doc
   customerName: z.string(),
   customerPicture: z.string().optional(),
   customerMessage: z.string(),
   aiReply: z.string(),
+  channel: ChannelTypeSchema, // line | facebook | instagram | web
   intent: z.string().optional(),
   ragDocsUsed: z.number().optional(),
   status: z.enum(["pending", "approved", "corrected", "featured"]),

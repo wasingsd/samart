@@ -7,6 +7,8 @@ import { Header } from "@/components/dashboard/Header";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { useAuth } from "@/hooks/useAuth";
 import { isFirebaseConfigured } from "@/lib/firebase/config";
+import { trpc } from "@/lib/trpc/client";
+import { useShopStore } from "@/stores/useShopStore";
 import { Loader2, ChevronRight } from "lucide-react";
 
 export default function DashboardLayout({
@@ -18,6 +20,25 @@ export default function DashboardLayout({
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const setShop = useShopStore((s) => s.setShop);
+  const setShopLoading = useShopStore((s) => s.setLoading);
+
+  // Fetch shop data when user is authenticated
+  const { data: shopData, isLoading: shopLoading, isFetched } = trpc.shop.getByOwner.useQuery(
+    undefined,
+    { enabled: !!user && !loading }
+  );
+
+  // Sync shop data to store
+  useEffect(() => {
+    if (isFetched) {
+      setShop(shopData ? (shopData as any) : null);
+      setShopLoading(false);
+    } else {
+      setShopLoading(shopLoading);
+    }
+  }, [shopData, shopLoading, isFetched, setShop, setShopLoading]);
 
   // Redirect to login if not authenticated (skip when Firebase not configured)
   useEffect(() => {
