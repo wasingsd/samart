@@ -196,12 +196,12 @@ async function handleTextMessage(
   let customerName: string | undefined;
 
   try {
-    // 1. Check AI message quota
-    const { checkQuota } = await import("@/lib/billing/guard");
-    const quota = await checkQuota(shopId, "ai_message");
+    // 1. Check AI message credit
+    const { checkCredits } = await import("@/lib/billing/guard");
+    const creditCheck = await checkCredits(shopId, "ai_message");
 
-    if (!quota.allowed) {
-      // Quota exceeded — send polite fallback
+    if (!creditCheck.allowed) {
+      // Credit exceeded — send polite fallback
       aiReply = "ขอบคุณที่ส่งข้อความมาครับ/ค่ะ ขณะนี้ระบบกำลังดำเนินการ ทางร้านจะตอบกลับโดยเร็วที่สุดนะครับ/ค่ะ";
       status = "quota_exceeded";
     } else {
@@ -237,9 +237,9 @@ async function handleTextMessage(
       aiReply = result.reply;
       status = "ai_replied";
 
-      // 3. Track usage
-      const { trackUsage } = await import("@/lib/billing/usage");
-      await trackUsage(shopId, "ai_message");
+      // 3. Deduct credit
+      const { spendCredits } = await import("@/lib/billing/usage");
+      await spendCredits(shopId, "ai_message");
     }
   } catch (error) {
     console.error("Chat Brain error:", error);
