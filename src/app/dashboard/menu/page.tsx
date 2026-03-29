@@ -99,8 +99,8 @@ export default function MenuPage() {
       if (biz.fields.unit && formUnit) d.unit = formUnit;
       if (biz.fields.duration && formDur) d.duration = parseInt(formDur);
 
-      if (editingItem) { updateM.mutate({ id: editingItem.id, data: d }); }
-      else { createM.mutate(d); }
+      if (editingItem) { updateM.mutate({ id: editingItem.id, data: d as any }); }
+      else { createM.mutate(d as any); }
     } catch (err: any) { setImgErr(err.message || "อัปโหลดรูปไม่สำเร็จ"); }
     finally { setUploading(false); }
   };
