@@ -5,12 +5,12 @@ import { Store, Sparkles, MessageCircle, CreditCard, Save, TestTube, ExternalLin
 import { trpc } from "@/lib/trpc/client";
 import { useShopStore } from "@/stores/useShopStore";
 
-type TabId = "shop" | "ai-style" | "line" | "plan";
+type TabId = "shop" | "ai-style" | "line" | "credits";
 const tabs: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: "shop", label: "ข้อมูลร้าน", icon: Store },
   { id: "ai-style", label: "สไตล์ AI", icon: Sparkles },
   { id: "line", label: "LINE OA", icon: MessageCircle },
-  { id: "plan", label: "แพลน", icon: CreditCard },
+  { id: "credits", label: "เครดิต", icon: CreditCard },
 ];
 
 export default function SettingsPage() {
@@ -61,7 +61,7 @@ export default function SettingsPage() {
         {activeTab === "shop" && <ShopInfoTab shopId={shop.id} shop={shop} />}
         {activeTab === "ai-style" && <AIStyleTab shopId={shop.id} shop={shop} />}
         {activeTab === "line" && <LineOATab shopId={shop.id} shop={shop} />}
-        {activeTab === "plan" && <PlanTab shop={shop} />}
+        {activeTab === "credits" && <CreditTab shop={shop} />}
       </div>
     </div>
   );
@@ -336,29 +336,154 @@ function LineOATab({ shopId, shop }: { shopId: string; shop: any }) {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function PlanTab({ shop }: { shop: any }) {
-  const plans = [
-    { name: "Starter", price: "1,490", features: ["Chat Brain", "Insight Dashboard", "1,000 msg/เดือน"], popular: false },
-    { name: "Pro", price: "2,490", features: ["+ Content Brain", "+ Sales Brain", "+ Customer Memory", "ไม่จำกัด msg"], popular: true },
-    { name: "Business", price: "3,490", features: ["+ Multi-branch", "+ Staff accounts", "+ API", "+ Custom AI Training"], popular: false },
-  ];
-  const currentPlan = shop.plan || "trial";
-  return (
-    <div className="p-6 space-y-6">
-      <div><h3 className="font-display font-semibold text-dark mb-1">แพลนปัจจุบัน</h3><p className="text-xs text-dark-muted">คุณกำลังใช้แพลน <span className="text-primary font-semibold">{currentPlan === "trial" ? "ทดลองใช้ฟรี" : currentPlan}</span></p></div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {plans.map((plan) => (
-          <div key={plan.name} className={`relative rounded-xl border-2 p-5 transition-all ${plan.popular ? "border-primary shadow-md" : "border-surface-container-high hover:border-primary/30"}`}>
-            {plan.popular && <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white text-xs px-3 py-0.5 rounded-full font-semibold">แนะนำ</span>}
-            <div className="text-center mb-4">
-              <h4 className="font-display font-bold text-dark mt-2">{plan.name}</h4>
-              <p className="text-2xl font-display font-bold text-primary mt-1">฿{plan.price}<span className="text-xs text-dark-muted font-normal">/เดือน</span></p>
-            </div>
-            <ul className="space-y-2 text-xs text-dark-muted">{plan.features.map((f) => (<li key={f} className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-primary flex-shrink-0" />{f}</li>))}</ul>
-            <button className={`w-full mt-4 py-2 rounded-lg text-sm font-medium transition-all ${plan.popular ? "gradient-primary text-white shadow-sm hover:opacity-90" : "bg-surface-dim text-dark hover:bg-surface-container"}`}>เลือกแพลน</button>
-          </div>
-        ))}
+function CreditTab({ shop }: { shop: any }) {
+  const { data: balanceData, isLoading: balanceLoading } = trpc.billing.getBalance.useQuery({ shopId: shop.id });
+  const { data: packages, isLoading: packagesLoading } = trpc.billing.getPackages.useQuery();
+  const purchaseMutation = trpc.billing.purchaseCredits.useMutation();
+
+  const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
+  const [showQr, setShowQr] = useState<string | null>(null);
+
+  const handlePurchase = async (pkgId: string) => {
+    try {
+      setSelectedPackage(pkgId);
+      const res = await purchaseMutation.mutateAsync({
+        shopId: shop.id,
+        packageId: pkgId,
+        paymentMethod: "promptpay",
+      });
+      if (res.qrCodeUrl) {
+        setShowQr(res.qrCodeUrl);
+      }
+    } catch (err) {
+      alert("เกิดข้อผิดพลาดในการสร้างรายการชำระเงิน");
+      setSelectedPackage(null);
+    }
+  };
+
+  const closeQr = () => {
+    setShowQr(null);
+    setSelectedPackage(null);
+  };
+
+  if (balanceLoading || packagesLoading) {
+    return (
+      <div className="p-12 flex justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
+    );
+  }
+
+  return (
+    <div className="p-6 space-y-8">
+      {/* Balance Summary */}
+      <div className="bg-gradient-to-br from-[#1A237E] to-[#00B4D8] rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <h3 className="text-white/80 text-sm font-medium uppercase tracking-wider mb-1">ยอดเครดิตคงเหลือ</h3>
+            <div className="flex items-baseline gap-2">
+              <span className="text-4xl font-display font-bold">
+                {balanceData?.creditBalance.toLocaleString() || 0}
+              </span>
+              <span className="text-white/80 font-medium">เครดิต</span>
+            </div>
+            <p className="text-white/70 text-xs mt-2">
+              ใช้เดือนนี้ไปแล้ว {(balanceData?.monthlyUsage || 0).toLocaleString()} เครดิต
+            </p>
+          </div>
+          <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 text-sm max-w-sm">
+            <h4 className="font-semibold mb-2 flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-yellow-300" />
+              การใช้งาน AI ของ SAMART ฟรีหรือไม่?
+            </h4>
+            <ul className="space-y-1.5 text-white/90 text-xs">
+              <li className="flex items-start gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-300 shrink-0 mt-0.5" /> ฟีเจอร์จัดการร้าน (POS, บริหารสต๊อก, เมนู) <b>ฟรีตลอดกาล</b></li>
+              <li className="flex items-start gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-300 shrink-0 mt-0.5" /> เครดิตจะถูกตัด <b>เฉพาะเมื่อเรียกใช้ AI</b> (เช่น ให้ AI ตอบแชทลูกค้า)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* Credit Packages */}
+      <div>
+        <h3 className="font-display font-semibold text-dark mb-4 text-lg">เติมเครดิต (Pay-As-You-Go)</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {packages?.filter(p => p.price > 0).map((pkg) => {
+            const isPurchasing = purchaseMutation.isPending && selectedPackage === pkg.id;
+            return (
+              <div key={pkg.id} className={`relative bg-surface-dim rounded-2xl border-2 p-5 flex flex-col transition-all ${pkg.popular ? "border-[#00B4D8] shadow-md shadow-blue-900/5" : "border-surface-container hover:border-surface-container-high"}`}>
+                {pkg.popular && (
+                  <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-[#1A237E] to-[#00B4D8] text-white text-[10px] uppercase font-bold tracking-widest px-3 py-1 rounded-full shadow-sm">
+                    คุ้มค่าที่สุด
+                  </span>
+                )}
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-xl shadow-sm border border-gray-100">
+                    {pkg.emoji}
+                  </div>
+                  <div>
+                    <h4 className="font-display font-bold text-dark">{pkg.name}</h4>
+                    <p className="text-xs text-dark-muted font-medium">เฉลี่ย {pkg.pricePerCredit.toFixed(2)} บาท/เครดิต</p>
+                  </div>
+                </div>
+                
+                <div className="mb-6 flex-1">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-3xl font-display font-extrabold text-[#1A237E]">
+                      {(pkg.credits + pkg.bonusCredits).toLocaleString()}
+                    </span>
+                    <span className="text-sm font-semibold text-gray-500">เครดิต</span>
+                  </div>
+                  {pkg.bonusCredits > 0 && (
+                    <div className="inline-block mt-2 text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
+                      + โบนัสฟรี {pkg.bonusCredits.toLocaleString()} เครดิต
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between mt-auto">
+                  <div>
+                    <span className="text-dark font-medium text-lg">฿{pkg.price.toLocaleString()}</span>
+                  </div>
+                  <button 
+                    onClick={() => handlePurchase(pkg.id)}
+                    disabled={isPurchasing || purchaseMutation.isPending}
+                    className={`px-5 py-2 rounded-xl text-sm font-bold transition-all ${pkg.popular ? "bg-[#1A237E] text-white shadow-sm hover:bg-[#283593]" : "bg-white text-dark border border-gray-200 hover:bg-gray-50"} disabled:opacity-50 flex items-center gap-2`}
+                  >
+                    {isPurchasing ? <Loader2 className="w-4 h-4 animate-spin" /> : "เติมเครดิต"}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* QR Code Modal (Simple overlay for now) */}
+      {showQr && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-dark/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl animate-in zoom-in-95 duration-300 text-center relative">
+            <button onClick={closeQr} className="absolute top-4 right-4 p-2 text-gray-400 hover:bg-gray-100 rounded-full transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+            <div className="w-16 h-16 mx-auto bg-blue-50 text-primary rounded-2xl flex items-center justify-center mb-4">
+              <CreditCard className="w-8 h-8" />
+            </div>
+            <h3 className="text-xl font-display font-bold text-dark">สแกนเพื่อชำระเงิน</h3>
+            <p className="text-sm text-dark-muted mt-2 mb-6">
+              สแกน QR Code นี้ผ่านแอปธนาคารใดก็ได้ (เครดิตจะถูกเพิ่มอัตโนมัติเมื่อชำระสำเร็จ)
+            </p>
+            <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 mb-6 flex justify-center">
+              {/* Note: Ideally we render the image src=showQr, assuming omise returns a uri */}
+              <img src={showQr} alt="PromptPay QR" className="w-48 h-48 object-contain mix-blend-multiply" />
+            </div>
+            <button onClick={closeQr} className="w-full py-3 rounded-xl bg-gray-100 hover:bg-gray-200 text-dark font-medium transition-colors">
+              ปิด / ทำรายการทีหลัง
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

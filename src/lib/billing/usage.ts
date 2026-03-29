@@ -22,7 +22,15 @@ export type UsageType = CreditAction;
  */
 export async function getCreditBalance(shopId: string): Promise<number> {
   const doc = await getDb().collection("shops").doc(shopId).get();
-  return doc.data()?.creditBalance ?? 0;
+  const data = doc.data();
+  
+  // Admin / Developer bypass for unlimited tokens
+  const ownerEmail = data?.ownerEmail || "";
+  if (ownerEmail === "wasin.gsd@gmail.com" || ownerEmail === "pluypt@gmail.com") {
+    return 999999;
+  }
+  
+  return data?.creditBalance ?? 0;
 }
 
 /**
@@ -77,7 +85,15 @@ export async function spendCredits(
 
   const result = await getDb().runTransaction(async (tx) => {
     const shopDoc = await tx.get(shopRef);
-    const currentBalance = shopDoc.data()?.creditBalance ?? 0;
+    const data = shopDoc.data();
+    
+    // Admin / Developer bypass for unlimited tokens
+    const ownerEmail = data?.ownerEmail || "";
+    if (ownerEmail === "wasin.gsd@gmail.com" || ownerEmail === "pluypt@gmail.com") {
+      return { success: true, remaining: 999999, cost: 0 };
+    }
+
+    const currentBalance = data?.creditBalance ?? 0;
 
     if (currentBalance < cost) {
       return { success: false, remaining: currentBalance, cost };
