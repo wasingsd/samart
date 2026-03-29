@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { signInWithLineToken } from "@/lib/firebase/auth";
+import { signInWithLineToken, checkGoogleRedirectResult } from "@/lib/firebase/auth";
 import { trpc } from "@/lib/trpc/client";
 import { ArrowRight, Loader2, AlertCircle } from "lucide-react";
 
@@ -69,7 +69,33 @@ function LoginContent() {
           setSocialLoading(null);
         });
     }
-  }, [searchParams, router]);
+  }, [searchParams, router, utils]);
+
+  // Handle Google OAuth redirect callback
+  useEffect(() => {
+    checkGoogleRedirectResult()
+      .then(async (user) => {
+        if (user) {
+          setSocialLoading("google");
+          try {
+            const me = await utils.auth.getMe.fetch();
+            if (me) {
+              router.push("/dashboard");
+            } else {
+              router.push("/register/complete");
+            }
+          } catch {
+            router.push("/register/complete");
+          }
+        }
+      })
+      .catch((err) => {
+        // Ignored cross-origin or pop-up errors if user abandoned flow
+        if (err.code !== "auth/redirect-cancelled-by-user") {
+          setError("ไม่สามารถเข้าสู่ระบบด้วย Google ได้");
+        }
+      });
+  }, [router, utils]);
 
   const emailError = touched.email && !email.trim()
     ? "กรุณากรอกอีเมล"
@@ -108,20 +134,9 @@ function LoginContent() {
     setError(null);
     try {
       await signInWithGoogle();
-      // Check if user doc exists (existing user → dashboard, new → complete profile)
-      try {
-        const me = await utils.auth.getMe.fetch();
-        if (me) {
-          router.push("/dashboard");
-        } else {
-          router.push("/register/complete");
-        }
-      } catch {
-        router.push("/register/complete");
-      }
+      // Code will stop here as the page redirects to Google
     } catch {
-      setError("ไม่สามารถเข้าสู่ระบบด้วย Google ได้");
-    } finally {
+      setError("ไม่สามารถเตรียมระบบเข้าสู่ระบบด้วย Google ได้");
       setSocialLoading(null);
     }
   };
