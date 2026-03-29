@@ -1,16 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Store, Sparkles, MessageCircle, CreditCard, Save, TestTube, ExternalLink, ShieldAlert, Plus, X, Loader2, Check, AlertCircle, Pencil } from "lucide-react";
+import { Store, Sparkles, MessageCircle, CreditCard, Save, TestTube, ExternalLink, ShieldAlert, Plus, X, Loader2, Check, AlertCircle, Pencil, Users, Copy, Trash2 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { useShopStore } from "@/stores/useShopStore";
 
-type TabId = "shop" | "ai-style" | "line" | "credits";
+type TabId = "shop" | "ai-style" | "line" | "credits" | "team";
 const tabs: { id: TabId; label: string; icon: React.ElementType }[] = [
   { id: "shop", label: "ข้อมูลร้าน", icon: Store },
   { id: "ai-style", label: "สไตล์ AI", icon: Sparkles },
   { id: "line", label: "LINE OA", icon: MessageCircle },
   { id: "credits", label: "เครดิต", icon: CreditCard },
+  { id: "team", label: "ทีมงาน", icon: Users },
 ];
 
 export default function SettingsPage() {
@@ -62,6 +63,7 @@ export default function SettingsPage() {
         {activeTab === "ai-style" && <AIStyleTab shopId={shop.id} shop={shop} />}
         {activeTab === "line" && <LineOATab shopId={shop.id} shop={shop} />}
         {activeTab === "credits" && <CreditTab shop={shop} />}
+        {activeTab === "team" && <TeamTab shop={shop} />}
       </div>
     </div>
   );
@@ -484,6 +486,134 @@ function CreditTab({ shop }: { shop: any }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function TeamTab({ shop }: { shop: any }) {
+  const { data, isLoading, refetch } = trpc.shop.getTeam.useQuery();
+  const generateMutation = trpc.shop.generateInviteCode.useMutation({
+    onSuccess: () => {
+      alert("สร้างรหัสเชิญสำเร็จ");
+    }
+  });
+  const removeMutation = trpc.shop.removeTeamMember.useMutation({
+    onSuccess: () => {
+      alert("ลบสมาชิกออกจากทีมสำเร็จ");
+      refetch();
+    }
+  });
+
+  const [localInviteCode, setLocalInviteCode] = useState(shop.inviteCode);
+
+  const handleGenerate = async () => {
+    if (!confirm("การสร้างรหัสใหม่จะทำให้รหัสเดิมใช้งานไม่ได้ ยืนยันหรือไม่?")) return;
+    try {
+      const res = await generateMutation.mutateAsync();
+      setLocalInviteCode(res.inviteCode);
+    } catch (e: any) {
+      alert(e.message);
+    }
+  };
+
+  const handleCopy = () => {
+    if (localInviteCode) {
+      navigator.clipboard.writeText(localInviteCode);
+      alert("คัดลอกรหัสเชิญแล้ว");
+    }
+  };
+
+  return (
+    <div className="p-6 space-y-8">
+      <div>
+        <h3 className="text-lg font-display font-bold text-dark mb-1">จัดการทีม</h3>
+        <p className="text-sm text-dark-muted">เชิญทีมงานเพื่อเข้ามาช่วยจัดการร้านค้าของคุณ</p>
+      </div>
+
+      <div className="bg-surface-dim rounded-2xl p-6 border-2 border-surface-container">
+        <h4 className="font-semibold text-dark mb-4">รหัสเชิญ (Invite Code)</h4>
+        {localInviteCode ? (
+          <div className="flex items-center gap-3">
+            <div className="bg-white border-2 border-primary/20 text-primary font-display font-bold text-2xl tracking-widest px-6 py-3 rounded-xl">
+              {localInviteCode}
+            </div>
+            <button onClick={handleCopy} className="p-3 bg-white text-dark border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors" title="คัดลอก">
+              <Copy className="w-5 h-5" />
+            </button>
+            <button onClick={handleGenerate} disabled={generateMutation.isPending} className="px-4 py-3 bg-white text-dark-muted border border-gray-200 rounded-xl hover:bg-gray-50 text-sm font-medium transition-colors disabled:opacity-50">
+              สร้างรหัสใหม่
+            </button>
+          </div>
+        ) : (
+          <div>
+            <p className="text-sm text-dark-muted mb-4">ร้านค้าของคุณยังไม่มีรหัสเชิญ</p>
+            <button onClick={handleGenerate} disabled={generateMutation.isPending} className="flex items-center gap-2 bg-[#1A237E] text-white px-5 py-2.5 rounded-xl font-medium text-sm hover:bg-[#283593] transition-colors disabled:opacity-50">
+              <Plus className="w-4 h-4" /> สร้างรหัสเชิญ
+            </button>
+          </div>
+        )}
+        <p className="text-xs text-gray-400 mt-4 leading-relaxed">
+          นำรหัสนี้ให้ทีมงานของคุณกรอกในหน้าต่าง <b>&quot;เข้าร่วมร้านค้า&quot;</b> เพื่อให้พวกเขาสามารถเข้าถึงและจัดการร้านค้านี้ร่วมกับคุณได้
+        </p>
+      </div>
+
+      <div>
+        <h4 className="font-semibold text-dark mb-4">สมาชิกในทีม ({data?.staff?.length ? data.staff.length + 1 : 1} คน)</h4>
+        {isLoading ? (
+          <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+        ) : (
+          <div className="space-y-3">
+            {/* Owner */}
+            {data?.owner && (
+              <div className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-primary font-bold overflow-hidden">
+                    {(data.owner as any).photoURL ? <img src={(data.owner as any).photoURL} alt="Owner" /> : (data.owner as any).displayName?.charAt(0)}
+                  </div>
+                  <div>
+                    <h5 className="font-semibold text-sm text-dark flex items-center gap-2">
+                      {(data.owner as any).displayName}
+                      <span className="text-[10px] bg-blue-100 text-primary px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">เจ้าของร้าน</span>
+                    </h5>
+                    <p className="text-xs text-dark-muted mt-0.5">{(data.owner as any).email}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Staff */}
+            {data?.staff?.map((s: any) => (
+              <div key={s.id} className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold overflow-hidden">
+                    {s.photoURL ? <img src={s.photoURL} alt="Staff" /> : s.displayName?.charAt(0)}
+                  </div>
+                  <div>
+                    <h5 className="font-semibold text-sm text-dark flex items-center gap-2">
+                      {s.displayName}
+                      <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">ทีมงาน</span>
+                    </h5>
+                    <p className="text-xs text-dark-muted mt-0.5">{s.email}</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => {
+                    if (confirm(`คุณต้องการลบ ${s.displayName} ออกจากทีมหรือไม่?`)) {
+                      removeMutation.mutate({ targetUid: s.id });
+                    }
+                  }}
+                  disabled={removeMutation.isPending}
+                  className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  title="ลบล็อกออกจากทีม"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

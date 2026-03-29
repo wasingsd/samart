@@ -94,6 +94,11 @@ export const ShopSchema = z.object({
   styleProfile: StyleProfileSchema,
   plan: z.enum(["trial", "starter", "pro", "business"]),
   trialEndsAt: z.any().optional(),
+  
+  // Team Management
+  inviteCode: z.string().optional(),
+  staffIds: z.array(z.string()).default([]),
+  
   createdAt: z.any(),
   updatedAt: z.any(),
 });

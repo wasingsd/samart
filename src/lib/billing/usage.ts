@@ -25,7 +25,12 @@ export async function getCreditBalance(shopId: string): Promise<number> {
   const data = doc.data();
   
   // Admin / Developer bypass for unlimited tokens
-  const ownerEmail = data?.ownerEmail || "";
+  let ownerEmail = data?.ownerEmail || "";
+  if (!ownerEmail && data?.ownerId) {
+    const userDoc = await getDb().collection("users").doc(data.ownerId).get();
+    ownerEmail = userDoc.data()?.email || "";
+  }
+
   if (ownerEmail === "wasin.gsd@gmail.com" || ownerEmail === "pluypt@gmail.com") {
     return 999999;
   }
@@ -88,7 +93,13 @@ export async function spendCredits(
     const data = shopDoc.data();
     
     // Admin / Developer bypass for unlimited tokens
-    const ownerEmail = data?.ownerEmail || "";
+    let ownerEmail = data?.ownerEmail || "";
+    if (!ownerEmail && data?.ownerId) {
+      const userRef = getDb().collection("users").doc(data.ownerId);
+      const userDoc = await tx.get(userRef);
+      ownerEmail = userDoc.data()?.email || "";
+    }
+
     if (ownerEmail === "wasin.gsd@gmail.com" || ownerEmail === "pluypt@gmail.com") {
       return { success: true, remaining: 999999, cost: 0 };
     }
