@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { signInWithLineToken, checkGoogleRedirectResult } from "@/lib/firebase/auth";
+import { signInWithLineToken } from "@/lib/firebase/auth";
 import { trpc } from "@/lib/trpc/client";
 import { ArrowRight, Loader2, AlertCircle } from "lucide-react";
 
@@ -71,32 +71,6 @@ function LoginContent() {
     }
   }, [searchParams, router, utils]);
 
-  // Handle Google OAuth redirect callback
-  useEffect(() => {
-    checkGoogleRedirectResult()
-      .then(async (user) => {
-        if (user) {
-          setSocialLoading("google");
-          try {
-            const me = await utils.auth.getMe.fetch();
-            if (me) {
-              router.push("/dashboard");
-            } else {
-              router.push("/register/complete");
-            }
-          } catch {
-            router.push("/register/complete");
-          }
-        }
-      })
-      .catch((err) => {
-        // Ignored cross-origin or pop-up errors if user abandoned flow
-        if (err.code !== "auth/redirect-cancelled-by-user") {
-          setError(`เกิดข้อผิดพลาด: ${err.message || err.code || "ไม่สามารถเข้าสู่ระบบด้วย Google ได้"}`);
-        }
-      });
-  }, [router, utils]);
-
   const emailError = touched.email && !email.trim()
     ? "กรุณากรอกอีเมล"
     : touched.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -134,9 +108,20 @@ function LoginContent() {
     setError(null);
     try {
       await signInWithGoogle();
-      // Code will stop here as the page redirects to Google
+      // Check if user doc exists (existing user → dashboard, new → complete profile)
+      try {
+        const me = await utils.auth.getMe.fetch();
+        if (me) {
+          router.push("/dashboard");
+        } else {
+          router.push("/register/complete");
+        }
+      } catch {
+        router.push("/register/complete");
+      }
     } catch (err: any) {
-      setError(`เกิดข้อผิดพลาด: ${err.message || err.code || "ไม่สามารถเตรียมระบบเข้าสู่ระบบด้วย Google ได้"}`);
+      setError(`เกิดข้อผิดพลาด: ${err.message || err.code || "ไม่สามารถเข้าสู่ระบบด้วย Google ได้"}`);
+    } finally {
       setSocialLoading(null);
     }
   };

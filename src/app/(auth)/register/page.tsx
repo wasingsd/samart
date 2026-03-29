@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { checkGoogleRedirectResult } from "@/lib/firebase/auth";
 import { trpc } from "@/lib/trpc/client";
 import { Loader2 } from "lucide-react";
 
@@ -23,21 +22,6 @@ export default function RegisterPage() {
   // Custom validation state
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    checkGoogleRedirectResult()
-      .then((user) => {
-        if (user) {
-          setSocialLoading("google");
-          router.push("/register/complete");
-        }
-      })
-      .catch((err) => {
-        if (err.code !== "auth/redirect-cancelled-by-user") {
-          setError(`เกิดข้อผิดพลาด: ${err.message || err.code || "ไม่สามารถเข้าสู่ระบบด้วย Google ได้"}`);
-        }
-      });
-  }, [router]);
 
   const validate = () => {
     const errors: Record<string, string> = {};
@@ -89,9 +73,11 @@ export default function RegisterPage() {
     setError(null);
     try {
       await signInWithGoogle();
-      // Code stops here because of redirect
+      // Redirect to complete profile page to set name + password
+      router.push("/register/complete");
     } catch (err: any) {
-      setError(`เกิดข้อผิดพลาด: ${err.message || err.code || "ไม่สามารถเริ่มการสมัครด้วย Google ได้"}`);
+      setError(`เกิดข้อผิดพลาด: ${err.message || err.code || "ไม่สามารถสมัครด้วย Google ได้"}`);
+    } finally {
       setSocialLoading(null);
     }
   };

@@ -1,8 +1,7 @@
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithPopup,
   GoogleAuthProvider,
   signInWithCustomToken,
   signOut as firebaseSignOut,
@@ -26,15 +25,11 @@ export async function signInWithEmail(email: string, password: string) {
 }
 
 /**
- * Google Sign-In (redirect flow)
+ * Google Sign-In (popup flow)
  */
 export async function signInWithGoogle() {
-  await signInWithRedirect(auth, googleProvider);
-}
-
-export async function checkGoogleRedirectResult() {
-  const credential = await getRedirectResult(auth);
-  return credential?.user || null;
+  const credential = await signInWithPopup(auth, googleProvider);
+  return credential.user;
 }
 
 /**
