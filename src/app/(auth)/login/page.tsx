@@ -92,7 +92,7 @@ function LoginContent() {
       .catch((err) => {
         // Ignored cross-origin or pop-up errors if user abandoned flow
         if (err.code !== "auth/redirect-cancelled-by-user") {
-          setError("ไม่สามารถเข้าสู่ระบบด้วย Google ได้");
+          setError(`เกิดข้อผิดพลาด: ${err.message || err.code || "ไม่สามารถเข้าสู่ระบบด้วย Google ได้"}`);
         }
       });
   }, [router, utils]);
@@ -135,8 +135,8 @@ function LoginContent() {
     try {
       await signInWithGoogle();
       // Code will stop here as the page redirects to Google
-    } catch {
-      setError("ไม่สามารถเตรียมระบบเข้าสู่ระบบด้วย Google ได้");
+    } catch (err: any) {
+      setError(`เกิดข้อผิดพลาด: ${err.message || err.code || "ไม่สามารถเตรียมระบบเข้าสู่ระบบด้วย Google ได้"}`);
       setSocialLoading(null);
     }
   };

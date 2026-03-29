@@ -34,7 +34,7 @@ export default function RegisterPage() {
       })
       .catch((err) => {
         if (err.code !== "auth/redirect-cancelled-by-user") {
-          setError("ไม่สามารถเข้าสู่ระบบด้วย Google ได้");
+          setError(`เกิดข้อผิดพลาด: ${err.message || err.code || "ไม่สามารถเข้าสู่ระบบด้วย Google ได้"}`);
         }
       });
   }, [router]);
@@ -90,8 +90,8 @@ export default function RegisterPage() {
     try {
       await signInWithGoogle();
       // Code stops here because of redirect
-    } catch {
-      setError("ไม่สามารถเริ่มการสมัครด้วย Google ได้");
+    } catch (err: any) {
+      setError(`เกิดข้อผิดพลาด: ${err.message || err.code || "ไม่สามารถเริ่มการสมัครด้วย Google ได้"}`);
       setSocialLoading(null);
     }
   };
