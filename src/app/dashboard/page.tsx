@@ -125,7 +125,7 @@ export default function DashboardPage() {
         iconBg: "bg-sky-50",
       });
     }
-    if (!shop?.lineChannelToken) {
+    if (!shop?.lineConnected) {
       items.push({
         icon: MessageCircle,
         title: "เชื่อมต่อ LINE OA",
