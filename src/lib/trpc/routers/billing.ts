@@ -1,130 +1,195 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../server";
 import { getDb } from "@/lib/firebase/admin";
-import { PLANS, getPlan, type PlanId } from "@/lib/billing/plans";
-import { getAllUsage } from "@/lib/billing/usage";
-import { checkQuota } from "@/lib/billing/guard";
-import { createCustomer, createCharge, updateCustomerCard } from "@/lib/billing/omise";
+import {
+  getPackagesList,
+  getCreditPackage,
+  getTotalCredits,
+  CREDIT_COSTS,
+  CREDIT_ACTION_LABELS,
+} from "@/lib/billing/plans";
+import {
+  getCreditBalance,
+  addCredits,
+  getMonthlyUsage,
+  getTransactionHistory,
+} from "@/lib/billing/usage";
+import { createCustomer, chargeCard, chargePromptPay, getCharge } from "@/lib/billing/omise";
 import { FieldValue } from "firebase-admin/firestore";
 
 export const billingRouter = router({
   /**
-   * ดึง plan ปัจจุบันของร้าน + usage + quota
+   * ดึงยอดเครดิต + usage stats
    */
-  getStatus: protectedProcedure
+  getBalance: protectedProcedure
     .input(z.object({ shopId: z.string() }))
     .query(async ({ input }) => {
-      const shopDoc = await getDb().collection("shops").doc(input.shopId).get();
-      const shop = shopDoc.data();
-      const planId = (shop?.plan || "free") as PlanId;
-      const plan = getPlan(planId);
-      const usage = await getAllUsage(input.shopId);
-
-      // Check each quota
-      const aiQuota = await checkQuota(input.shopId, "ai_message");
-      const knowledgeQuota = await checkQuota(input.shopId, "knowledge_doc");
-      const contentQuota = await checkQuota(input.shopId, "content_generation");
+      const balance = await getCreditBalance(input.shopId);
+      const monthlyUsage = await getMonthlyUsage(input.shopId);
 
       return {
-        plan,
-        billing: shop?.billing || { status: "none" },
-        usage,
-        quotas: {
-          aiMessages: aiQuota,
-          knowledgeDocs: knowledgeQuota,
-          contentGenerations: contentQuota,
-        },
+        creditBalance: balance,
+        monthlyUsage,
+        creditCosts: CREDIT_COSTS,
+        creditLabels: CREDIT_ACTION_LABELS,
       };
     }),
 
   /**
-   * ดึง plans ทั้งหมดเพื่อแสดง pricing
+   * ดึงรายการ credit packages
    */
-  getPlans: protectedProcedure.query(() => {
-    return Object.values(PLANS);
+  getPackages: protectedProcedure.query(() => {
+    return getPackagesList();
   }),
 
   /**
-   * อัปเกรด/เปลี่ยน plan
+   * ซื้อเครดิต — จ่ายผ่านบัตรหรือ PromptPay
    */
-  upgradePlan: protectedProcedure
+  purchaseCredits: protectedProcedure
     .input(
       z.object({
         shopId: z.string(),
-        planId: z.enum(["free", "pro", "business"]),
-        cardToken: z.string().optional(), // Omise token จาก frontend
+        packageId: z.string(),
+        paymentMethod: z.enum(["card", "promptpay"]),
+        cardToken: z.string().optional(), // ต้องมีถ้า method = card
       })
     )
     .mutation(async ({ input }) => {
-      const plan = getPlan(input.planId);
+      const pkg = getCreditPackage(input.packageId);
+      if (!pkg) throw new Error("ไม่พบแพ็กเครดิตนี้");
+      if (pkg.price === 0) throw new Error("แพ็กฟรีไม่ต้องชำระเงิน");
 
-      // Downgrade to free
-      if (input.planId === "free") {
+      const shopDoc = await getDb().collection("shops").doc(input.shopId).get();
+      const shop = shopDoc.data();
+      const amountSatang = pkg.price * 100;
+      const description = `SAMART Credits: ${pkg.name} (${getTotalCredits(pkg)} เครดิต)`;
+
+      if (input.paymentMethod === "card") {
+        // Card payment
+        if (!input.cardToken) throw new Error("กรุณาเพิ่มบัตรเครดิต/เดบิต");
+
+        let omiseCustomerId = shop?.billing?.omiseCustomerId;
+        if (!omiseCustomerId) {
+          const customer = await createCustomer(
+            shop?.ownerEmail || "",
+            `SAMART: ${shop?.name || input.shopId}`,
+            input.cardToken
+          );
+          omiseCustomerId = customer.id;
+
+          // Save customer ID
+          await getDb().collection("shops").doc(input.shopId).update({
+            "billing.omiseCustomerId": omiseCustomerId,
+          });
+        }
+
+        const charge = await chargeCard(amountSatang, omiseCustomerId, description);
+
+        if (charge.status === "successful") {
+          const totalCredits = getTotalCredits(pkg);
+          await addCredits(input.shopId, totalCredits, "topup", {
+            packageId: pkg.id,
+            paymentId: charge.id,
+          });
+
+          // Log billing history
+          await getDb()
+            .collection("shops")
+            .doc(input.shopId)
+            .collection("billingHistory")
+            .doc(charge.id)
+            .set({
+              chargeId: charge.id,
+              amount: pkg.price,
+              credits: totalCredits,
+              packageId: pkg.id,
+              method: "card",
+              status: "successful",
+              paidAt: FieldValue.serverTimestamp(),
+            });
+
+          return { success: true, chargeId: charge.id, credits: totalCredits };
+        }
+
+        throw new Error("การชำระเงินไม่สำเร็จ กรุณาลองใหม่");
+      } else {
+        // PromptPay QR
+        const result = await chargePromptPay(amountSatang, description);
+
+        // Save pending charge
         await getDb()
           .collection("shops")
           .doc(input.shopId)
-          .update({
-            plan: "free",
-            "billing.status": "none",
-            updatedAt: FieldValue.serverTimestamp(),
+          .collection("billingHistory")
+          .doc(result.chargeId)
+          .set({
+            chargeId: result.chargeId,
+            amount: pkg.price,
+            credits: getTotalCredits(pkg),
+            packageId: pkg.id,
+            method: "promptpay",
+            status: "pending",
+            createdAt: FieldValue.serverTimestamp(),
           });
-        return { success: true, plan: "free" };
+
+        return {
+          success: true,
+          chargeId: result.chargeId,
+          qrCodeUrl: result.qrCodeUrl,
+          expiresAt: result.expiresAt,
+          credits: getTotalCredits(pkg),
+        };
       }
-
-      // Paid plan — needs card token
-      if (!input.cardToken) {
-        throw new Error("กรุณาเพิ่มบัตรเครดิต/เดบิตก่อนอัปเกรด");
-      }
-
-      // Get or create Omise customer
-      const shopDoc = await getDb().collection("shops").doc(input.shopId).get();
-      const shop = shopDoc.data();
-      let omiseCustomerId = shop?.billing?.omiseCustomerId;
-
-      if (!omiseCustomerId) {
-        const customer = await createCustomer(
-          shop?.ownerEmail || "",
-          `SAMART Shop: ${shop?.name || input.shopId}`,
-          input.cardToken
-        );
-        omiseCustomerId = customer.id;
-      } else {
-        await updateCustomerCard(omiseCustomerId, input.cardToken);
-      }
-
-      // Create first charge
-      const amountSatang = plan.price * 100;
-      const charge = await createCharge(
-        amountSatang,
-        "thb",
-        omiseCustomerId,
-        `SAMART ${plan.name} - ${shop?.name || "Shop"}`
-      );
-
-      // Update shop
-      const nextBillingDate = new Date();
-      nextBillingDate.setMonth(nextBillingDate.getMonth() + 1);
-
-      await getDb()
-        .collection("shops")
-        .doc(input.shopId)
-        .update({
-          plan: input.planId,
-          billing: {
-            status: charge.status === "successful" ? "active" : "pending",
-            omiseCustomerId,
-            lastChargeId: charge.id,
-            lastPaidAt: charge.status === "successful" ? new Date() : null,
-            nextBillingDate,
-          },
-          updatedAt: FieldValue.serverTimestamp(),
-        });
-
-      return { success: true, plan: input.planId, chargeStatus: charge.status };
     }),
 
   /**
-   * ดึงประวัติการชำระเงิน
+   * เช็คสถานะ PromptPay charge (polling)
+   */
+  checkChargeStatus: protectedProcedure
+    .input(z.object({ shopId: z.string(), chargeId: z.string() }))
+    .query(async ({ input }) => {
+      const charge = await getCharge(input.chargeId);
+
+      if (charge.paid && charge.status === "successful") {
+        // Check if already credited
+        const historyDoc = await getDb()
+          .collection("shops")
+          .doc(input.shopId)
+          .collection("billingHistory")
+          .doc(input.chargeId)
+          .get();
+
+        const history = historyDoc.data();
+        if (history && history.status === "pending") {
+          // Credit not yet added — add now
+          await addCredits(input.shopId, history.credits, "topup", {
+            packageId: history.packageId,
+            paymentId: input.chargeId,
+          });
+
+          await historyDoc.ref.update({
+            status: "successful",
+            paidAt: FieldValue.serverTimestamp(),
+          });
+        }
+
+        return { paid: true, status: "successful" };
+      }
+
+      return { paid: false, status: charge.status };
+    }),
+
+  /**
+   * ดึงประวัติธุรกรรม (topup + deduct)
+   */
+  getTransactions: protectedProcedure
+    .input(z.object({ shopId: z.string(), limit: z.number().default(20) }))
+    .query(async ({ input }) => {
+      return getTransactionHistory(input.shopId, input.limit);
+    }),
+
+  /**
+   * ดึงประวัติการชำระเงิน (เฉพาะ top-up)
    */
   getHistory: protectedProcedure
     .input(z.object({ shopId: z.string() }))

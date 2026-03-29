@@ -1,6 +1,7 @@
 /**
  * Omise Payment Integration
- * Monthly subscription billing สำหรับ SAMART
+ * Pay-as-you-go credit top-up สำหรับ SAMART
+ * รองรับ: บัตรเครดิต/เดบิต + PromptPay QR
  */
 
 const OMISE_API = "https://api.omise.co";
@@ -39,9 +40,10 @@ async function omiseRequest(
   return res.json();
 }
 
-/**
- * สร้าง Omise Customer
- */
+// ──────────────────────────────────────
+// Customer
+// ──────────────────────────────────────
+
 export async function createCustomer(
   email: string,
   description: string,
@@ -49,80 +51,87 @@ export async function createCustomer(
 ): Promise<{ id: string }> {
   const body: Record<string, string> = { email, description };
   if (cardToken) body.card = cardToken;
-
   const result = await omiseRequest("/customers", "POST", body);
   return { id: result.id as string };
 }
 
-/**
- * อัปเดต card ของ customer
- */
-export async function updateCustomerCard(
-  customerId: string,
-  cardToken: string
-): Promise<void> {
-  await omiseRequest(`/customers/${customerId}`, "PATCH", { card: cardToken });
-}
+// ──────────────────────────────────────
+// Charge — One-time payment
+// ──────────────────────────────────────
 
 /**
- * สร้าง Charge (one-time payment)
- * ใช้สำหรับ monthly billing via cron/schedule
+ * Charge via card (customer token)
  */
-export async function createCharge(
+export async function chargeCard(
   amount: number, // สตางค์ (THB * 100)
-  currency: string = "thb",
   customerId: string,
   description: string
-): Promise<{ id: string; status: string }> {
+): Promise<{ id: string; status: string; authorized: boolean }> {
   const result = await omiseRequest("/charges", "POST", {
     amount,
-    currency,
+    currency: "thb",
     customer: customerId,
     description,
   });
   return {
     id: result.id as string,
     status: result.status as string,
+    authorized: result.authorized as boolean,
   };
 }
 
 /**
- * สร้าง Schedule (recurring monthly charge)
+ * Charge via PromptPay QR
+ * สร้าง source → charge → return QR image URL
  */
-export async function createSchedule(
-  customerId: string,
-  amount: number, // สตางค์
+export async function chargePromptPay(
+  amount: number, // สตางค์ (THB * 100)
   description: string
-): Promise<{ id: string }> {
-  const result = await omiseRequest("/schedules", "POST", {
-    every: 1,
-    period: "month",
-    "on[days_of_month][]": 1 as unknown as string,
-    "charge[customer]": customerId,
-    "charge[amount]": amount,
-    "charge[currency]": "thb",
-    "charge[description]": description,
+): Promise<{
+  chargeId: string;
+  status: string;
+  qrCodeUrl: string;
+  expiresAt: string;
+}> {
+  // Step 1: Create PromptPay source
+  const source = await omiseRequest("/sources", "POST", {
+    type: "promptpay",
+    amount,
+    currency: "thb",
   });
-  return { id: result.id as string };
+
+  // Step 2: Create charge from source
+  const charge = await omiseRequest("/charges", "POST", {
+    amount,
+    currency: "thb",
+    source: source.id as string,
+    description,
+  });
+
+  // QR code URL from source
+  const scannable = (charge.source as Record<string, unknown>)?.scannable_code as Record<string, unknown> | undefined;
+  const qrImage = scannable?.image as Record<string, unknown> | undefined;
+
+  return {
+    chargeId: charge.id as string,
+    status: charge.status as string,
+    qrCodeUrl: (qrImage?.download_uri as string) || "",
+    expiresAt: (charge.expires_at as string) || "",
+  };
 }
 
-/**
- * ยกเลิก Schedule
- */
-export async function destroySchedule(scheduleId: string): Promise<void> {
-  await omiseRequest(`/schedules/${scheduleId}`, "DELETE");
-}
+// ──────────────────────────────────────
+// Charge Status
+// ──────────────────────────────────────
 
-/**
- * ดึงข้อมูล Charge
- */
 export async function getCharge(
   chargeId: string
-): Promise<{ id: string; status: string; amount: number }> {
+): Promise<{ id: string; status: string; amount: number; paid: boolean }> {
   const result = await omiseRequest(`/charges/${chargeId}`);
   return {
     id: result.id as string,
     status: result.status as string,
     amount: result.amount as number,
+    paid: result.paid as boolean,
   };
 }

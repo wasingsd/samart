@@ -5,11 +5,11 @@ import { generateInsights, detectAnomalies } from "@/lib/ai/insights";
 import { buildFromMenu, buildFromOnboarding } from "@/lib/ai/knowledge-builder";
 import { generateProductImage, enhanceImagePrompt } from "@/lib/ai/image-gen";
 import { handleChatMessage } from "@/lib/ai/chat-brain";
-import { checkFeatureAccess } from "@/lib/billing/guard";
+import { enforceCredit } from "@/lib/billing/guard";
 
 export const aiRouter = router({
   /**
-   * AI Preview — ลองถาม AI ว่าจะตอบยังไง (ไม่นับ quota)
+   * AI Preview — ลองถาม AI ว่าจะตอบยังไง (หักเครดิต)
    */
   previewAI: protectedProcedure
     .input(
@@ -19,6 +19,8 @@ export const aiRouter = router({
       })
     )
     .mutation(async ({ input }) => {
+      await enforceCredit(input.shopId, "ai_message");
+
       const result = await handleChatMessage({
         shopId: input.shopId,
         customerMessage: input.question,
@@ -28,16 +30,17 @@ export const aiRouter = router({
     }),
 
   /**
-   * Daily Briefing — สรุปยอดขายเมื่อวาน + action items
+   * Daily Briefing — สรุปยอดขายเมื่อวาน + action items (หักเครดิต)
    */
   getDailyBriefing: protectedProcedure
     .input(z.object({ shopId: z.string() }))
     .query(async ({ input }) => {
+      await enforceCredit(input.shopId, "daily_briefing");
       return generateDailyBriefing(input.shopId);
     }),
 
   /**
-   * AI Insights — วิเคราะห์ trend + anomaly (Business plan only)
+   * AI Insights — วิเคราะห์ trend + anomaly (หักเครดิต, ทุกคนใช้ได้)
    */
   getInsights: protectedProcedure
     .input(
@@ -47,25 +50,12 @@ export const aiRouter = router({
       })
     )
     .query(async ({ input }) => {
-      // Check plan access
-      const hasAccess = await checkFeatureAccess(input.shopId, "hasAIInsights");
-      if (!hasAccess) {
-        return {
-          insights: [{
-            type: "recommendation" as const,
-            icon: "🔒",
-            title: "อัปเกรดเป็น Business",
-            description: "AI Insights พร้อมใช้งานในแพลน Business เท่านั้น",
-            priority: "medium" as const,
-          }],
-          generatedAt: new Date().toISOString(),
-        };
-      }
+      await enforceCredit(input.shopId, "ai_insights");
       return generateInsights(input.shopId, input.period);
     }),
 
   /**
-   * Quick anomaly alerts (ไม่ใช้ AI, ทุก plan ใช้ได้)
+   * Quick anomaly alerts (ไม่ใช้ AI, ฟรี ไม่หักเครดิต)
    */
   getAnomalies: protectedProcedure
     .input(z.object({ shopId: z.string() }))
@@ -74,7 +64,7 @@ export const aiRouter = router({
     }),
 
   /**
-   * Auto-build knowledge from menu items
+   * Auto-build knowledge from menu items (ฟรี)
    */
   buildKnowledgeFromMenu: protectedProcedure
     .input(z.object({ shopId: z.string() }))
@@ -83,7 +73,7 @@ export const aiRouter = router({
     }),
 
   /**
-   * Auto-build knowledge from onboarding data
+   * Auto-build knowledge from onboarding data (ฟรี)
    */
   buildKnowledgeFromOnboarding: protectedProcedure
     .input(z.object({ shopId: z.string() }))
@@ -92,7 +82,7 @@ export const aiRouter = router({
     }),
 
   /**
-   * Generate product image (Imagen 3)
+   * Generate product image — Imagen 3 (หักเครดิต image_generation)
    */
   generateImage: protectedProcedure
     .input(
@@ -102,31 +92,30 @@ export const aiRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      const { enforceQuota } = await import("@/lib/billing/guard");
-      await enforceQuota(input.shopId, "content_generation");
+      await enforceCredit(input.shopId, "image_generation");
 
       const result = await generateProductImage(input.prompt);
       if (!result) {
         throw new Error("ไม่สามารถสร้างรูปได้ กรุณาลองใหม่");
       }
-
-      const { trackUsage } = await import("@/lib/billing/usage");
-      await trackUsage(input.shopId, "content_generation");
-
       return result;
     }),
 
   /**
-   * Enhance image prompt — ช่วย user สร้าง prompt ที่ดีขึ้น
+   * Enhance image prompt — ช่วย user สร้าง prompt ที่ดีขึ้น (หักเครดิต)
    */
   enhancePrompt: protectedProcedure
     .input(
       z.object({
         productName: z.string(),
         productType: z.string(),
+        shopId: z.string().optional(),
       })
     )
     .mutation(async ({ input }) => {
+      if (input.shopId) {
+        await enforceCredit(input.shopId, "enhance_prompt");
+      }
       const enhanced = await enhanceImagePrompt(input.productName, input.productType);
       return { prompt: enhanced };
     }),

@@ -11,11 +11,11 @@ export const analyticsRouter = router({
     .input(
       z.object({
         shopId: z.string(),
-        period: z.enum(["7d", "14d", "30d"]).default("7d"),
+        period: z.enum(["1d", "7d", "14d", "30d"]).default("7d"),
       })
     )
     .query(async ({ input }) => {
-      const daysMap = { "7d": 7, "14d": 14, "30d": 30 };
+      const daysMap = { "1d": 1, "7d": 7, "14d": 14, "30d": 30 };
       const days = daysMap[input.period];
       const since = new Date();
       since.setDate(since.getDate() - days);
@@ -69,6 +69,61 @@ export const analyticsRouter = router({
         topProducts,
         period: input.period,
       };
+    }),
+
+  /**
+   * ดึงยอดขายรายวันสำหรับกราฟ
+   */
+  dailyBreakdown: protectedProcedure
+    .input(
+      z.object({
+        shopId: z.string(),
+        period: z.enum(["7d", "14d", "30d"]).default("7d"),
+      })
+    )
+    .query(async ({ input }) => {
+      const daysMap = { "7d": 7, "14d": 14, "30d": 30 };
+      const days = daysMap[input.period];
+      const since = new Date();
+      since.setDate(since.getDate() - days);
+
+      const ordersSnap = await getDb()
+        .collection("shops")
+        .doc(input.shopId)
+        .collection("orders")
+        .where("createdAt", ">=", since)
+        .get();
+
+      // Group by date
+      const dailyMap: Record<string, { revenue: number; orders: number }> = {};
+
+      // Pre-fill all dates with zeros
+      for (let i = 0; i < days; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() - (days - 1 - i));
+        const key = d.toISOString().split("T")[0];
+        dailyMap[key] = { revenue: 0, orders: 0 };
+      }
+
+      ordersSnap.docs.forEach((doc) => {
+        const order = doc.data();
+        if (order.status !== "cancelled") {
+          const ts = order.createdAt?.toDate?.() || new Date(order.createdAt);
+          const key = ts.toISOString().split("T")[0];
+          if (!dailyMap[key]) dailyMap[key] = { revenue: 0, orders: 0 };
+          dailyMap[key].revenue += order.totalAmount || 0;
+          dailyMap[key].orders++;
+        }
+      });
+
+      return Object.entries(dailyMap)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([date, data]) => ({
+          date,
+          label: new Date(date).toLocaleDateString("th-TH", { day: "numeric", month: "short" }),
+          revenue: data.revenue,
+          orders: data.orders,
+        }));
     }),
 
   /**

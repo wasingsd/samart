@@ -20,6 +20,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useShopStore } from "@/stores/useShopStore";
 import { getBusinessConfig } from "@/lib/businessConfig";
+import { trpc } from "@/lib/trpc/client";
 
 /*
   UX/UI Guidelines applied:
@@ -187,17 +188,9 @@ export function Sidebar({ isOpen, onClose, collapsed, onToggleCollapse }: Sideba
 
         {/* ─── Bottom ─── */}
         <div className="border-t border-white/[0.08] p-3">
-          {/* Trial banner */}
+          {/* Credit balance */}
           {!collapsed && (
-            <div className="mb-3 p-3 rounded-xl bg-gradient-to-r from-amber-500/10 to-amber-400/5 border border-amber-500/10">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold text-amber-400 flex items-center gap-1"><Sparkles className="w-3 h-3" /> ทดลองใช้ฟรี</p>
-                <p className="text-[10px] text-gray-500">14 วัน</p>
-              </div>
-              <div className="mt-2 w-full bg-white/[0.06] rounded-full h-1.5">
-                <div className="bg-gradient-to-r from-amber-400 to-amber-300 rounded-full h-1.5 w-[100%]" />
-              </div>
-            </div>
+            <CreditIndicator shopId={shop?.id || ""} />
           )}
 
           {/* Logout */}
@@ -215,5 +208,38 @@ export function Sidebar({ isOpen, onClose, collapsed, onToggleCollapse }: Sideba
         </div>
       </aside>
     </>
+  );
+}
+
+function CreditIndicator({ shopId }: { shopId: string }) {
+  const { data } = trpc.billing.getBalance.useQuery(
+    { shopId },
+    { enabled: !!shopId, refetchInterval: 60000 }
+  );
+
+  const balance = data?.creditBalance ?? 0;
+  const isLow = balance < 50;
+
+  return (
+    <Link
+      href="/dashboard/settings?tab=credits"
+      className={`mb-3 p-3 rounded-xl block transition-colors ${
+        isLow
+          ? "bg-gradient-to-r from-red-500/10 to-red-400/5 border border-red-500/15 hover:border-red-500/30"
+          : "bg-gradient-to-r from-[#00B4D8]/10 to-[#00B4D8]/5 border border-[#00B4D8]/10 hover:border-[#00B4D8]/25"
+      }`}
+    >
+      <div className="flex items-center justify-between">
+        <p className={`text-xs font-semibold flex items-center gap-1 ${isLow ? "text-red-400" : "text-[#00B4D8]"}`}>
+          <Sparkles className="w-3 h-3" /> เครดิต
+        </p>
+        <p className={`text-sm font-bold ${isLow ? "text-red-300" : "text-white"}`}>
+          {balance.toLocaleString()}
+        </p>
+      </div>
+      {isLow && (
+        <p className="text-[10px] text-red-400/80 mt-1">เครดิตเหลือน้อย — กดเพื่อเติม</p>
+      )}
+    </Link>
   );
 }

@@ -38,8 +38,9 @@ export const shopRouter = router({
         id: shopRef.id,
         ownerId: ctx.user.uid,
         lineConnected: false,
-        plan: "trial" as const,
-        trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 วัน
+        creditBalance: 100,     // เครดิตฟรีตอนสมัคร
+        totalCreditsBought: 100,
+        totalCreditsUsed: 0,
         createdAt: now,
         updatedAt: now,
       };

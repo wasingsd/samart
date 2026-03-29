@@ -1,118 +1,134 @@
 /**
- * SAMART Plan Definitions
- * ราคา, quota, features สำหรับแต่ละ plan
+ * SAMART Credit System — Pay-As-You-Go
+ * เครดิตใช้เฉพาะ AI features, CRUD ฟรีทั้งหมด
  */
 
-export type PlanId = "free" | "pro" | "business";
+// -- Credit Actions & Costs --
 
-export interface PlanLimits {
-  aiMessages: number;       // ต่อเดือน
-  knowledgeDocs: number;    // จำนวนสูงสุด
-  contentGenerations: number; // ต่อเดือน
-  analyticsDays: number;    // ย้อนหลังกี่วัน
-  canBroadcast: boolean;
-  canExportCSV: boolean;
-  hasAIInsights: boolean;
-}
+export type CreditAction =
+  | "ai_message"           // AI ตอบแชทลูกค้า
+  | "content_generation"   // สร้าง Content โพสต์
+  | "image_generation"     // สร้างรูป AI (Imagen)
+  | "daily_briefing"       // AI Daily Briefing
+  | "ai_insights"          // AI วิเคราะห์ข้อมูล
+  | "enhance_prompt";      // AI แนะนำ prompt
 
-export interface PlanConfig {
-  id: PlanId;
+/**
+ * ต้นทุนเครดิตต่อ action
+ * คำนวณจาก Gemini API cost จริง + markup ~70%
+ */
+export const CREDIT_COSTS: Record<CreditAction, number> = {
+  ai_message: 1,           // Flash model ~0.10 ฿
+  content_generation: 5,   // Pro model ~0.50 ฿
+  image_generation: 10,    // Imagen 3 ~1.00 ฿
+  daily_briefing: 3,       // Pro model ~0.30 ฿
+  ai_insights: 8,          // Pro model ~0.80 ฿
+  enhance_prompt: 1,       // Flash model ~0.10 ฿
+};
+
+/**
+ * Label ภาษาไทยสำหรับแต่ละ action
+ */
+export const CREDIT_ACTION_LABELS: Record<CreditAction, string> = {
+  ai_message: "AI ตอบแชท",
+  content_generation: "สร้าง Content",
+  image_generation: "สร้างรูป AI",
+  daily_briefing: "Daily Briefing",
+  ai_insights: "AI Insights",
+  enhance_prompt: "AI แนะนำ prompt",
+};
+
+// -- Credit Packages --
+
+export type PackageId = "starter" | "basic" | "popular" | "power" | "business";
+
+export interface CreditPackage {
+  id: PackageId;
   name: string;
-  price: number;          // THB/month (0 = free)
-  limits: PlanLimits;
-  features: string[];
-  recommended?: boolean;
+  emoji: string;
+  credits: number;
+  bonusCredits: number;  // เครดิตโบนัสเพิ่ม
+  price: number;         // THB (0 = free)
+  pricePerCredit: number;
+  popular?: boolean;
 }
 
-export const PLANS: Record<PlanId, PlanConfig> = {
-  free: {
-    id: "free",
-    name: "Free",
+export const CREDIT_PACKAGES: Record<PackageId, CreditPackage> = {
+  starter: {
+    id: "starter",
+    name: "Starter",
+    emoji: "🌱",
+    credits: 100,
+    bonusCredits: 0,
     price: 0,
-    limits: {
-      aiMessages: 100,
-      knowledgeDocs: 20,
-      contentGenerations: 3,
-      analyticsDays: 7,
-      canBroadcast: false,
-      canExportCSV: false,
-      hasAIInsights: false,
-    },
-    features: [
-      "AI ตอบแชทอัตโนมัติ 100 ข้อความ/เดือน",
-      "Knowledge Base 20 รายการ",
-      "สร้าง Content AI 3 ครั้ง/เดือน",
-      "วิเคราะห์ยอดขาย 7 วัน",
-    ],
+    pricePerCredit: 0,
   },
-  pro: {
-    id: "pro",
-    name: "Pro",
-    price: 599,
-    recommended: true,
-    limits: {
-      aiMessages: 2000,
-      knowledgeDocs: 200,
-      contentGenerations: 30,
-      analyticsDays: 30,
-      canBroadcast: true,
-      canExportCSV: true,
-      hasAIInsights: false,
-    },
-    features: [
-      "AI ตอบแชทอัตโนมัติ 2,000 ข้อความ/เดือน",
-      "Knowledge Base 200 รายการ",
-      "สร้าง Content AI 30 ครั้ง/เดือน",
-      "วิเคราะห์ยอดขาย 30 วัน",
-      "ส่ง Broadcast ได้",
-      "Export CSV",
-    ],
+  basic: {
+    id: "basic",
+    name: "Basic",
+    emoji: "⚡",
+    credits: 500,
+    bonusCredits: 0,
+    price: 149,
+    pricePerCredit: 0.30,
+  },
+  popular: {
+    id: "popular",
+    name: "Popular",
+    emoji: "🔥",
+    credits: 2000,
+    bonusCredits: 200,
+    price: 499,
+    pricePerCredit: 0.25,
+    popular: true,
+  },
+  power: {
+    id: "power",
+    name: "Power",
+    emoji: "💎",
+    credits: 5000,
+    bonusCredits: 1000,
+    price: 999,
+    pricePerCredit: 0.20,
   },
   business: {
     id: "business",
     name: "Business",
-    price: 1499,
-    limits: {
-      aiMessages: 10000,
-      knowledgeDocs: -1, // unlimited
-      contentGenerations: -1,
-      analyticsDays: 90,
-      canBroadcast: true,
-      canExportCSV: true,
-      hasAIInsights: true,
-    },
-    features: [
-      "AI ตอบแชทอัตโนมัติ 10,000 ข้อความ/เดือน",
-      "Knowledge Base ไม่จำกัด",
-      "สร้าง Content AI ไม่จำกัด",
-      "วิเคราะห์ยอดขาย 90 วัน + AI Insights",
-      "ส่ง Broadcast ได้",
-      "Export CSV",
-    ],
+    emoji: "🏢",
+    credits: 15000,
+    bonusCredits: 3000,
+    price: 2499,
+    pricePerCredit: 0.17,
   },
 };
 
 /**
- * ดึง plan config จาก planId
+ * เครดิตฟรีตอนสมัครใหม่
  */
-export function getPlan(planId: string): PlanConfig {
-  return PLANS[planId as PlanId] || PLANS.free;
+export const FREE_STARTER_CREDITS = 100;
+
+/**
+ * เครดิตคงเหลือขั้นต่ำที่แสดง warning
+ */
+export const LOW_CREDIT_THRESHOLD = 50;
+
+// -- Helpers --
+
+export function getCreditCost(action: CreditAction): number {
+  return CREDIT_COSTS[action];
+}
+
+export function getCreditPackage(id: string): CreditPackage | null {
+  return CREDIT_PACKAGES[id as PackageId] || null;
+}
+
+export function getPackagesList(): CreditPackage[] {
+  return Object.values(CREDIT_PACKAGES);
 }
 
 /**
- * ดึง limits ของ plan
+ * คำนวณเครดิตรวม (base + bonus)
  */
-export function getPlanLimits(planId: string): PlanLimits {
-  return getPlan(planId).limits;
-}
-
-/**
- * เช็คว่า plan รองรับ feature หรือไม่
- */
-export function canUseFeature(planId: string, feature: keyof PlanLimits): boolean {
-  const limits = getPlanLimits(planId);
-  const value = limits[feature];
-  if (typeof value === "boolean") return value;
-  if (typeof value === "number") return value !== 0;
-  return false;
+export function getTotalCredits(pkg: CreditPackage): number {
+  return pkg.credits + pkg.bonusCredits;
 }

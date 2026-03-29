@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bot, BarChart3, Pencil, Share2, Users, CreditCard, Check, ArrowRight, ChevronDown } from "lucide-react";
+import { Bot, BarChart3, Pencil, Share2, Users, CreditCard, ArrowRight, ChevronDown } from "lucide-react";
 
 const features = [
   {
@@ -35,37 +35,46 @@ const features = [
   {
     icon: CreditCard,
     title: "ระบบ Billing",
-    desc: "เริ่มฟรี อัปเกรดเมื่อพร้อม จ่ายผ่านบัตรเครดิต/เดบิต ปลอดภัย",
+    desc: "จ่ายเท่าที่ใช้ ไม่มีรายเดือน เติมเครดิตเมื่อต้องการ ปลอดภัย",
     color: "text-teal-600 bg-teal-50",
   },
 ];
 
-const plans = [
+const creditPackages = [
   {
-    name: "Free",
-    price: "0",
-    period: "ตลอดไป",
-    desc: "เริ่มต้นใช้งาน ทดลองระบบ",
-    features: ["AI ตอบแชท 100 ข้อความ/เดือน", "Knowledge Base 20 รายการ", "สร้าง Content 3 ครั้ง/เดือน", "วิเคราะห์ยอดย้อนหลัง 7 วัน"],
-    cta: "เริ่มต้นฟรี",
+    name: "Basic",
+    emoji: "⚡",
+    credits: "500",
+    bonus: "",
+    price: "149",
+    perCredit: "0.30",
     popular: false,
   },
   {
-    name: "Pro",
-    price: "599",
-    period: "/เดือน",
-    desc: "สำหรับร้านที่เติบโต",
-    features: ["AI ตอบแชท 2,000 ข้อความ/เดือน", "Knowledge Base 200 รายการ", "สร้าง Content 30 ครั้ง/เดือน", "วิเคราะห์ยอดย้อนหลัง 30 วัน", "Broadcast ลูกค้า", "Export ข้อมูล"],
-    cta: "อัปเกรด Pro",
+    name: "Popular",
+    emoji: "🔥",
+    credits: "2,000",
+    bonus: "+ 200 โบนัส",
+    price: "499",
+    perCredit: "0.25",
     popular: true,
   },
   {
+    name: "Power",
+    emoji: "💎",
+    credits: "5,000",
+    bonus: "+ 1,000 โบนัส",
+    price: "999",
+    perCredit: "0.20",
+    popular: false,
+  },
+  {
     name: "Business",
-    price: "1,499",
-    period: "/เดือน",
-    desc: "สำหรับธุรกิจขนาดใหญ่",
-    features: ["AI ตอบแชท 10,000 ข้อความ/เดือน", "Knowledge Base ไม่จำกัด", "สร้าง Content ไม่จำกัด", "วิเคราะห์ยอดย้อนหลัง 90 วัน", "AI Insights + Anomaly Alert", "Broadcast + Priority Support"],
-    cta: "ติดต่อเรา",
+    emoji: "🏢",
+    credits: "15,000",
+    bonus: "+ 3,000 โบนัส",
+    price: "2,499",
+    perCredit: "0.17",
     popular: false,
   },
 ];
@@ -124,7 +133,7 @@ export default function HomePage() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-500 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
             </span>
-            เปิดให้ใช้งานแล้ววันนี้ — เริ่มฟรี ไม่ต้องใช้บัตรเครดิต
+            เปิดให้ใช้งานแล้ววันนี้ — จ่ายเท่าที่ใช้ เครดิตฟรี 100
           </div>
 
           <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold leading-tight tracking-tight">
@@ -205,17 +214,25 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-16">
             <span className="text-sm font-semibold text-[#1A237E] tracking-wider uppercase">Pricing</span>
-            <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-gray-900">เลือกแพลนที่เหมาะกับคุณ</h2>
-            <p className="mt-3 text-gray-500">เริ่มต้นฟรี อัปเกรดเมื่อธุรกิจเติบโต</p>
+            <h2 className="mt-3 text-3xl sm:text-4xl font-bold text-gray-900">จ่ายเท่าที่ใช้ ไม่มีรายเดือน</h2>
+            <p className="mt-3 text-gray-500 max-w-xl mx-auto">ฟีเจอร์ทั้งหมดใช้ฟรี เสียเครดิตเฉพาะ AI — เริ่มด้วยเครดิตฟรี 100</p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {plans.map((p) => (
+          {/* Free badge */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-emerald-50 border border-emerald-100 text-sm text-emerald-600 font-medium">
+              🌱 สมัครฟรี — ได้รับเครดิตฟรี 100 เครดิต ทดลองใช้ทันที
+            </div>
+          </div>
+
+          {/* Credit packages */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-5xl mx-auto mb-16">
+            {creditPackages.map((p) => (
               <div
                 key={p.name}
-                className={`relative rounded-2xl p-8 transition-all duration-300 ${
+                className={`relative rounded-2xl p-6 transition-all duration-300 ${
                   p.popular
-                    ? "bg-white border-2 border-[#00B4D8] shadow-xl shadow-blue-100 scale-[1.02]"
+                    ? "bg-white border-2 border-[#00B4D8] shadow-xl shadow-blue-100 scale-[1.03]"
                     : "bg-white border border-gray-100 hover:border-gray-200 hover:shadow-lg"
                 }`}
               >
@@ -224,35 +241,59 @@ export default function HomePage() {
                     แนะนำ
                   </div>
                 )}
-                <h3 className="text-xl font-bold text-gray-900">{p.name}</h3>
-                <p className="text-sm text-gray-500 mt-1">{p.desc}</p>
-                <div className="mt-6 flex items-baseline gap-1">
+                <div className="text-2xl mb-2">{p.emoji}</div>
+                <h3 className="text-lg font-bold text-gray-900">{p.name}</h3>
+                <div className="mt-3 flex items-baseline gap-1">
                   <span className="text-sm text-gray-400">฿</span>
-                  <span className="text-4xl font-extrabold text-gray-900">{p.price}</span>
-                  <span className="text-sm text-gray-400">{p.period}</span>
+                  <span className="text-3xl font-extrabold text-gray-900">{p.price}</span>
                 </div>
-
-                <ul className="mt-8 space-y-3">
-                  {p.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2.5 text-sm text-gray-600">
-                      <Check className="w-5 h-5 text-[#00B4D8] shrink-0 mt-0.5" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-
+                <p className="text-sm text-gray-500 mt-1">{p.credits} เครดิต</p>
+                {p.bonus && (
+                  <p className="text-xs text-emerald-500 font-semibold mt-0.5">{p.bonus}</p>
+                )}
+                <p className="text-[11px] text-gray-400 mt-1">฿{p.perCredit}/เครดิต</p>
                 <Link
                   href="/register"
-                  className={`mt-8 w-full inline-flex justify-center py-3 px-4 rounded-xl text-sm font-semibold transition-all ${
+                  className={`mt-5 w-full inline-flex justify-center py-2.5 px-4 rounded-xl text-sm font-semibold transition-all ${
                     p.popular
                       ? "bg-gradient-to-r from-[#1A237E] to-[#00B4D8] text-white hover:opacity-90 shadow-md shadow-blue-500/20"
                       : "border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                   }`}
                 >
-                  {p.cta}
+                  ซื้อเครดิต
                 </Link>
               </div>
             ))}
+          </div>
+
+          {/* Credit cost table */}
+          <div className="max-w-2xl mx-auto">
+            <h3 className="text-center text-lg font-bold text-gray-900 mb-6">อัตราเครดิตต่อ Action</h3>
+            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+              {[
+                { action: "AI ตอบแชทลูกค้า", credits: "1 เครดิต", icon: "💬" },
+                { action: "สร้าง Content โพสต์", credits: "5 เครดิต", icon: "✍️" },
+                { action: "สร้างรูป AI", credits: "10 เครดิต", icon: "🎨" },
+                { action: "AI Daily Briefing", credits: "3 เครดิต", icon: "☀️" },
+                { action: "AI Insights", credits: "8 เครดิต", icon: "📊" },
+              ].map((item, idx) => (
+                <div
+                  key={item.action}
+                  className={`flex items-center justify-between px-6 py-3.5 ${
+                    idx < 4 ? "border-b border-gray-50" : ""
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg">{item.icon}</span>
+                    <span className="text-sm text-gray-700">{item.action}</span>
+                  </div>
+                  <span className="text-sm font-bold text-[#1A237E]">{item.credits}</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-center text-gray-400 mt-4">
+              ฟีเจอร์อื่นๆ (เมนู, POS, ลูกค้า, Analytics, Knowledge) — <span className="text-emerald-500 font-semibold">ใช้ฟรีไม่จำกัด</span>
+            </p>
           </div>
         </div>
       </section>
@@ -261,7 +302,7 @@ export default function HomePage() {
       <section className="relative py-24 border-t border-gray-100">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
           <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">พร้อมเปลี่ยนวิธีจัดการร้านค้า?</h2>
-          <p className="text-gray-500 mb-8">เริ่มใช้ SAMART ฟรีวันนี้ — ไม่ต้องใช้บัตรเครดิต ตั้งค่า 5 นาที</p>
+          <p className="text-gray-500 mb-8">เริ่มใช้ SAMART ฟรีวันนี้ — เครดิตฟรี 100 ตั้งค่า 5 นาที จ่ายเท่าที่ใช้</p>
           <Link
             href="/register"
             className="inline-flex items-center gap-2 px-10 py-4 rounded-2xl text-base font-semibold text-white bg-gradient-to-r from-[#1A237E] to-[#00B4D8] hover:opacity-90 transition-all shadow-lg shadow-blue-500/25 hover:scale-[1.02]"

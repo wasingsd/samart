@@ -1,36 +1,130 @@
 import { getDb } from "@/lib/firebase/admin";
 import { FieldValue } from "firebase-admin/firestore";
+import { getCreditCost, type CreditAction } from "./plans";
 
 /**
- * Usage Metering — บันทึกและตรวจสอบการใช้งานของร้าน
- * เก็บใน shops/{shopId}/usage/{yearMonth}
+ * Credit & Usage Metering — ระบบเครดิต + บันทึกการใช้งาน
+ *
+ * Firestore structure:
+ *   shops/{shopId}.creditBalance           — ยอดเครดิตคงเหลือ
+ *   shops/{shopId}/creditTransactions/{id}  — ประวัติธุรกรรม
+ *   shops/{shopId}/usage/{yearMonth}        — สรุปรายเดือน (สำหรับ analytics)
  */
 
-export type UsageType = "ai_message" | "knowledge_doc" | "content_generation";
+export type UsageType = CreditAction;
 
-interface UsageDoc {
-  ai_message: number;
-  knowledge_doc: number;
-  content_generation: number;
-  updatedAt: FirebaseFirestore.Timestamp;
+// ──────────────────────────────────────
+// Credit Balance
+// ──────────────────────────────────────
+
+/**
+ * ดึงยอดเครดิตคงเหลือ
+ */
+export async function getCreditBalance(shopId: string): Promise<number> {
+  const doc = await getDb().collection("shops").doc(shopId).get();
+  return doc.data()?.creditBalance ?? 0;
 }
 
 /**
- * Get current month key (e.g. "2026-03")
+ * เพิ่มเครดิต (เมื่อเติม/ได้โบนัส)
  */
+export async function addCredits(
+  shopId: string,
+  amount: number,
+  reason: "topup" | "bonus" | "refund",
+  meta?: { packageId?: string; paymentId?: string }
+): Promise<{ newBalance: number }> {
+  const shopRef = getDb().collection("shops").doc(shopId);
+
+  const newBalance = await getDb().runTransaction(async (tx) => {
+    const shopDoc = await tx.get(shopRef);
+    const currentBalance = shopDoc.data()?.creditBalance ?? 0;
+    const updatedBalance = currentBalance + amount;
+
+    tx.update(shopRef, {
+      creditBalance: FieldValue.increment(amount),
+      totalCreditsBought: FieldValue.increment(amount),
+    });
+
+    // Log transaction
+    const txRef = shopRef.collection("creditTransactions").doc();
+    tx.set(txRef, {
+      id: txRef.id,
+      type: reason,
+      amount,
+      balanceAfter: updatedBalance,
+      packageId: meta?.packageId || null,
+      paymentId: meta?.paymentId || null,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+
+    return updatedBalance;
+  });
+
+  return { newBalance };
+}
+
+/**
+ * หักเครดิต (เมื่อใช้ AI)
+ * คืน false ถ้าเครดิตไม่พอ
+ */
+export async function spendCredits(
+  shopId: string,
+  action: CreditAction
+): Promise<{ success: boolean; remaining: number; cost: number }> {
+  const cost = getCreditCost(action);
+  const shopRef = getDb().collection("shops").doc(shopId);
+
+  const result = await getDb().runTransaction(async (tx) => {
+    const shopDoc = await tx.get(shopRef);
+    const currentBalance = shopDoc.data()?.creditBalance ?? 0;
+
+    if (currentBalance < cost) {
+      return { success: false, remaining: currentBalance, cost };
+    }
+
+    const newBalance = currentBalance - cost;
+
+    tx.update(shopRef, {
+      creditBalance: FieldValue.increment(-cost),
+      totalCreditsUsed: FieldValue.increment(cost),
+    });
+
+    // Log transaction
+    const txRef = shopRef.collection("creditTransactions").doc();
+    tx.set(txRef, {
+      id: txRef.id,
+      type: "deduct",
+      amount: -cost,
+      action,
+      balanceAfter: newBalance,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+
+    return { success: true, remaining: newBalance, cost };
+  });
+
+  // Also track monthly usage stats (fire-and-forget)
+  trackMonthlyUsage(shopId, action).catch(() => {});
+
+  return result;
+}
+
+// ──────────────────────────────────────
+// Monthly Usage Stats (for analytics)
+// ──────────────────────────────────────
+
 function getCurrentMonth(): string {
   const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  return `${year}-${month}`;
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
 /**
- * Track usage — เพิ่มจำนวนการใช้งาน
+ * Track monthly usage (สำหรับดูสถิติ ไม่ใช่ guard)
  */
-export async function trackUsage(
+async function trackMonthlyUsage(
   shopId: string,
-  type: UsageType,
+  action: CreditAction,
   count: number = 1
 ): Promise<void> {
   const monthKey = getCurrentMonth();
@@ -42,7 +136,7 @@ export async function trackUsage(
 
   await ref.set(
     {
-      [type]: FieldValue.increment(count),
+      [action]: FieldValue.increment(count),
       updatedAt: FieldValue.serverTimestamp(),
     },
     { merge: true }
@@ -50,30 +144,11 @@ export async function trackUsage(
 }
 
 /**
- * Get current month usage for a specific type
+ * Get monthly usage summary
  */
-export async function getUsage(
-  shopId: string,
-  type: UsageType
-): Promise<number> {
-  const monthKey = getCurrentMonth();
-  const doc = await getDb()
-    .collection("shops")
-    .doc(shopId)
-    .collection("usage")
-    .doc(monthKey)
-    .get();
-
-  if (!doc.exists) return 0;
-  return (doc.data() as Partial<UsageDoc>)?.[type] || 0;
-}
-
-/**
- * Get all usage for current month
- */
-export async function getAllUsage(
+export async function getMonthlyUsage(
   shopId: string
-): Promise<Record<UsageType, number>> {
+): Promise<Record<string, number>> {
   const monthKey = getCurrentMonth();
   const doc = await getDb()
     .collection("shops")
@@ -82,18 +157,35 @@ export async function getAllUsage(
     .doc(monthKey)
     .get();
 
-  const data = doc.exists ? (doc.data() as Partial<UsageDoc>) : {};
-
-  return {
-    ai_message: data.ai_message || 0,
-    knowledge_doc: data.knowledge_doc || 0,
-    content_generation: data.content_generation || 0,
-  };
+  if (!doc.exists) return {};
+  const data = doc.data() || {};
+  // Remove non-action fields
+  const { updatedAt, ...usage } = data;
+  return usage as Record<string, number>;
 }
 
 /**
- * Get knowledge doc count (total, not monthly)
+ * Get transaction history
  */
+export async function getTransactionHistory(
+  shopId: string,
+  limit: number = 20
+): Promise<Array<Record<string, unknown>>> {
+  const snap = await getDb()
+    .collection("shops")
+    .doc(shopId)
+    .collection("creditTransactions")
+    .orderBy("createdAt", "desc")
+    .limit(limit)
+    .get();
+
+  return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+}
+
+// ──────────────────────────────────────
+// Legacy compat (knowledge doc count)
+// ──────────────────────────────────────
+
 export async function getKnowledgeDocCount(shopId: string): Promise<number> {
   const snapshot = await getDb()
     .collection("shops")
@@ -101,6 +193,5 @@ export async function getKnowledgeDocCount(shopId: string): Promise<number> {
     .collection("knowledge")
     .where("isActive", "==", true)
     .get();
-
   return snapshot.size;
 }

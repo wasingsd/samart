@@ -21,9 +21,9 @@ export const contentRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      // Check content generation quota
-      const { enforceQuota } = await import("@/lib/billing/guard");
-      await enforceQuota(input.shopId, "content_generation");
+      // Check + deduct credits
+      const { enforceCredit } = await import("@/lib/billing/guard");
+      await enforceCredit(input.shopId, "content_generation");
 
       const typeLabels: Record<string, string> = {
         promotion: "โปรโมชัน",
@@ -79,9 +79,7 @@ export const contentRouter = router({
         updatedAt: FieldValue.serverTimestamp(),
       });
 
-      // Track usage
-      const { trackUsage } = await import("@/lib/billing/usage");
-      await trackUsage(input.shopId, "content_generation");
+      // Usage already tracked by enforceCredit
 
       return { id: docRef.id, content };
     }),
