@@ -100,18 +100,9 @@ export default function OnboardingPage() {
           <h1 className="text-3xl sm:text-4xl font-display font-bold text-gray-900 mb-2">
             ตั้งค่าผู้ช่วย AI ของคุณ
           </h1>
-          <p className="text-gray-500 max-w-xl text-center mb-6">
+          <p className="text-gray-500 max-w-xl text-center">
             สร้างระบบ AI ฉลาดๆ ที่จะช่วยดูแลร้าน ตอบลูกค้า และจัดการสต็อกแทนคุณใน 3 ขั้นตอน
           </p>
-          <div className="bg-blue-50/50 border border-blue-100/50 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-4 max-w-lg w-full">
-            <div className="flex-1 text-left">
-              <h4 className="font-semibold text-sm text-[#1A237E]">มีรหัสเชิญเข้าร่วมทีมแล้วใช่ไหม?</h4>
-              <p className="text-xs text-slate-500 mt-0.5">ข้ามการสร้างร้านและเข้าร่วมทีมงานที่มีอยู่แทน</p>
-            </div>
-            <button type="button" onClick={() => router.push("/join")} className="whitespace-nowrap px-4 py-2 bg-white text-[#1A237E] border border-blue-200 hover:bg-blue-50 hover:border-blue-300 rounded-xl text-sm font-semibold transition-all">
-              กรอกรหัสเชิญ
-            </button>
-          </div>
         </div>
 
         {/* Progress Stepper */}

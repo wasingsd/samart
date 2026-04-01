@@ -4,7 +4,7 @@ import { z } from "zod";
 // User
 // ===========================================
 
-export const UserRoleSchema = z.enum(["owner", "staff"]);
+export const UserRoleSchema = z.enum(["owner", "manager", "staff"]);
 
 export const UserSchema = z.object({
   uid: z.string(),
@@ -96,8 +96,7 @@ export const ShopSchema = z.object({
   trialEndsAt: z.any().optional(),
   
   // Team Management
-  inviteCode: z.string().optional(),
-  staffIds: z.array(z.string()).default([]),
+  members: z.record(z.enum(["owner", "manager", "staff"])).default({}),
   
   createdAt: z.any(),
   updatedAt: z.any(),

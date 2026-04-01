@@ -56,8 +56,9 @@ export const contentRouter = router({
 ให้ content พร้อมใช้งาน ไม่ต้องใส่คำอธิบายเพิ่มเติม`,
           `สร้างโพสต์ ${typeLabels[input.postType]} เกี่ยวกับ: ${input.topic}`
         );
-      } catch {
-        content = `[${typeLabels[input.postType]}]\n\n${input.topic}\n\n(กรุณาตั้งค่า GEMINI_API_KEY เพื่อใช้ AI สร้าง content)`;
+      } catch (error: any) {
+        console.error("Gemini Generate Error:", error);
+        content = `[${typeLabels[input.postType]}]\n\n${input.topic}\n\n(เกิดข้อผิดพลาดในการสร้าง Content: ${error.message})`;
       }
 
       // Save draft

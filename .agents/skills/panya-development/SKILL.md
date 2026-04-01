@@ -221,6 +221,12 @@ Mono/Code:      JetBrains Mono 400
 - ✅ เป็นกันเอง เหมือนที่ปรึกษาที่เข้าใจธุรกิจ
 - ❌ ห้ามพูดศัพท์เทคนิค เช่น "pipeline", "inference", "webhook endpoint"
 
+### UI/UX & Design Guidelines
+- ✅ การออกแบบต้องดู **ทันสมัย (Modern, Sleek, Professional)** และมีความเบาบางคลีน สบายตา
+- ❌ **พยายามหลีกเลี่ยง** การใช้ Emoji และ Icon ที่มีสีสันเยอะหรือมีลูกเล่นมากเกินไป (Playful/Colorful Emojis & Icons) เพราะอาจทำให้ระบบดูไม่น่าเชื่อถือหรือเหมือนของเด็กเล่น
+- ✅ เลือกใช้ **Icon ที่เรียบง่าย โทนสีเดียว (เช่น Outline/Solid จาก lucide-react)** แทนการใช้ Emoji ช่วยให้ดูเป็นแอปพลิเคชันระดับองค์กร
+- ✅ ตัวหนังสือต้องอ่านง่าย (High Contrast) จัดสรรพื้นที่ว่าง (White Space) ให้เหมาะสม ไม่รกเกินไป
+
 ---
 
 ## 💰 Pricing Tiers

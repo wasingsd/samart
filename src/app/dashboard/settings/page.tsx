@@ -493,11 +493,28 @@ function CreditTab({ shop }: { shop: any }) {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function TeamTab({ shop }: { shop: any }) {
   const { data, isLoading, refetch } = trpc.shop.getTeam.useQuery();
-  const generateMutation = trpc.shop.generateInviteCode.useMutation({
+  const [showForm, setShowForm] = useState(false);
+  const [errorModalMsg, setErrorModalMsg] = useState<string | null>(null);
+
+  const [formData, setFormData] = useState({
+    displayName: "",
+    email: "",
+    password: "",
+    role: "staff" as "owner" | "manager" | "staff",
+  });
+
+  const addMutation = trpc.shop.addTeamMember.useMutation({
     onSuccess: () => {
-      alert("สร้างรหัสเชิญสำเร็จ");
+      alert("สร้างบัญชีทีมงานสำเร็จ");
+      setShowForm(false);
+      setFormData({ displayName: "", email: "", password: "", role: "staff" });
+      refetch();
+    },
+    onError: (err) => {
+      setErrorModalMsg(err.message || "เกิดข้อผิดพลาดในการสร้างบัญชี");
     }
   });
+
   const removeMutation = trpc.shop.removeTeamMember.useMutation({
     onSuccess: () => {
       alert("ลบสมาชิกออกจากทีมสำเร็จ");
@@ -505,58 +522,137 @@ function TeamTab({ shop }: { shop: any }) {
     }
   });
 
-  const [localInviteCode, setLocalInviteCode] = useState(shop.inviteCode);
-
-  const handleGenerate = async () => {
-    if (!confirm("การสร้างรหัสใหม่จะทำให้รหัสเดิมใช้งานไม่ได้ ยืนยันหรือไม่?")) return;
-    try {
-      const res = await generateMutation.mutateAsync();
-      setLocalInviteCode(res.inviteCode);
-    } catch (e: any) {
-      alert(e.message);
+  const handleAddSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.displayName || !formData.email || formData.password.length < 6) {
+      setErrorModalMsg("กรุณากรอกข้อมูลให้ครบถ้วนและรหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร");
+      return;
     }
+    addMutation.mutate(formData);
   };
 
-  const handleCopy = () => {
-    if (localInviteCode) {
-      navigator.clipboard.writeText(localInviteCode);
-      alert("คัดลอกรหัสเชิญแล้ว");
-    }
+  const getRoleBadge = (role: string) => {
+    if (role === "owner") return <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">เจ้าของร้าน</span>;
+    if (role === "manager") return <span className="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">ผู้จัดการ</span>;
+    return <span className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">พนักงาน</span>;
   };
 
   return (
     <div className="p-6 space-y-8">
-      <div>
-        <h3 className="text-lg font-display font-bold text-dark mb-1">จัดการทีม</h3>
-        <p className="text-sm text-dark-muted">เชิญทีมงานเพื่อเข้ามาช่วยจัดการร้านค้าของคุณ</p>
+      {/* Error Modal */}
+      {errorModalMsg && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
+            <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center text-red-500 mb-4">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">ข้อมูลไม่ถูกต้อง</h3>
+            <p className="text-sm text-gray-600 mb-6">{errorModalMsg}</p>
+            <button
+              onClick={() => setErrorModalMsg(null)}
+              className="w-full bg-red-50 hover:bg-red-100 text-red-600 font-semibold py-2.5 rounded-xl transition-colors"
+            >
+              รับทราบ
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="flex justify-between items-start">
+        <div>
+          <h3 className="text-lg font-display font-bold text-dark mb-1">จัดการทีม</h3>
+          <p className="text-sm text-dark-muted">สร้างบัญชีผู้ใช้งานให้ทีมงานเพื่อช่วยกันดูแลร้าน</p>
+        </div>
+        {!showForm && (
+          <button 
+            onClick={() => setShowForm(true)}
+            className="flex items-center gap-2 bg-[#1A237E] text-white px-5 py-2.5 rounded-xl font-medium text-sm hover:bg-[#283593] transition-colors"
+          >
+            <Plus className="w-4 h-4" /> เพิ่มทีมงาน
+          </button>
+        )}
       </div>
 
-      <div className="bg-surface-dim rounded-2xl p-6 border-2 border-surface-container">
-        <h4 className="font-semibold text-dark mb-4">รหัสเชิญ (Invite Code)</h4>
-        {localInviteCode ? (
-          <div className="flex items-center gap-3">
-            <div className="bg-white border-2 border-primary/20 text-primary font-display font-bold text-2xl tracking-widest px-6 py-3 rounded-xl">
-              {localInviteCode}
+      {showForm && (
+        <div className="bg-surface-dim rounded-2xl p-6 border-2 border-surface-container animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="flex justify-between items-center mb-6">
+            <h4 className="font-semibold text-dark">สร้างบัญชีทีมงานใหม่</h4>
+            <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          
+          <form onSubmit={handleAddSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-gray-700">ชื่อ-นามสกุล / ชื่อเล่น</label>
+                <input 
+                  type="text" 
+                  value={formData.displayName}
+                  onChange={(e) => setFormData({...formData, displayName: e.target.value})}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all text-sm"
+                  placeholder="เช่น สมชาย ใจดี"
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-gray-700">ตำแหน่ง (Role)</label>
+                <select 
+                  value={formData.role}
+                  onChange={(e) => setFormData({...formData, role: e.target.value as "owner" | "manager" | "staff"})}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all text-sm bg-white"
+                >
+                  <option value="owner">เจ้าของร้าน (สิทธิ์สูงสุด บริหารร้านและทีมงาน)</option>
+                  <option value="manager">ผู้จัดการ (จัดการข้อมูลร้าน แต่ลบร้าน/ทีมไม่ได้)</option>
+                  <option value="staff">พนักงาน (ใช้งานแคชเชียร์/POS และแชทเท่านั้น)</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-gray-700">อีเมล (สำหรับเข้าใช้งาน)</label>
+                <input 
+                  type="email" 
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all text-sm"
+                  placeholder="staff@example.com"
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-gray-700">รหัสผ่าน (อย่างน้อย 6 ตัว)</label>
+                <input 
+                  type="text" 
+                  value={formData.password}
+                  onChange={(e) => setFormData({...formData, password: e.target.value})}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all text-sm"
+                  placeholder="รหัสผ่านชั่วคราว"
+                  minLength={6}
+                  required
+                />
+              </div>
             </div>
-            <button onClick={handleCopy} className="p-3 bg-white text-dark border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors" title="คัดลอก">
-              <Copy className="w-5 h-5" />
-            </button>
-            <button onClick={handleGenerate} disabled={generateMutation.isPending} className="px-4 py-3 bg-white text-dark-muted border border-gray-200 rounded-xl hover:bg-gray-50 text-sm font-medium transition-colors disabled:opacity-50">
-              สร้างรหัสใหม่
-            </button>
-          </div>
-        ) : (
-          <div>
-            <p className="text-sm text-dark-muted mb-4">ร้านค้าของคุณยังไม่มีรหัสเชิญ</p>
-            <button onClick={handleGenerate} disabled={generateMutation.isPending} className="flex items-center gap-2 bg-[#1A237E] text-white px-5 py-2.5 rounded-xl font-medium text-sm hover:bg-[#283593] transition-colors disabled:opacity-50">
-              <Plus className="w-4 h-4" /> สร้างรหัสเชิญ
-            </button>
-          </div>
-        )}
-        <p className="text-xs text-gray-400 mt-4 leading-relaxed">
-          นำรหัสนี้ให้ทีมงานของคุณกรอกในหน้าต่าง <b>&quot;เข้าร่วมร้านค้า&quot;</b> เพื่อให้พวกเขาสามารถเข้าถึงและจัดการร้านค้านี้ร่วมกับคุณได้
-        </p>
-      </div>
+            
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+              <button 
+                type="button" 
+                onClick={() => setShowForm(false)}
+                className="px-5 py-2.5 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+                disabled={addMutation.isPending}
+              >
+                ยกเลิก
+              </button>
+              <button 
+                type="submit" 
+                className="flex items-center gap-2 bg-gradient-to-r from-[#1A237E] to-[#00B4D8] text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+                disabled={addMutation.isPending}
+              >
+                {addMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                ยืนยันสร้างบัญชี
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       <div>
         <h4 className="font-semibold text-dark mb-4">สมาชิกในทีม ({data?.staff?.length ? data.staff.length + 1 : 1} คน)</h4>
@@ -574,7 +670,7 @@ function TeamTab({ shop }: { shop: any }) {
                   <div>
                     <h5 className="font-semibold text-sm text-dark flex items-center gap-2">
                       {(data.owner as any).displayName}
-                      <span className="text-[10px] bg-blue-100 text-primary px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">เจ้าของร้าน</span>
+                      {getRoleBadge("owner")}
                     </h5>
                     <p className="text-xs text-dark-muted mt-0.5">{(data.owner as any).email}</p>
                   </div>
@@ -592,7 +688,7 @@ function TeamTab({ shop }: { shop: any }) {
                   <div>
                     <h5 className="font-semibold text-sm text-dark flex items-center gap-2">
                       {s.displayName}
-                      <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">ทีมงาน</span>
+                      {getRoleBadge(s.role || "staff")}
                     </h5>
                     <p className="text-xs text-dark-muted mt-0.5">{s.email}</p>
                   </div>
@@ -605,7 +701,7 @@ function TeamTab({ shop }: { shop: any }) {
                   }}
                   disabled={removeMutation.isPending}
                   className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                  title="ลบล็อกออกจากทีม"
+                  title="ลบออกจากร้าน"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>

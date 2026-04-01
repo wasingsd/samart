@@ -43,7 +43,7 @@ export async function generatePro(
   userMessage: string
 ): Promise<string> {
   const model = getGenAI().getGenerativeModel({
-    model: "gemini-2.5-pro-preview-06-05",
+    model: "gemini-1.5-flash",
     systemInstruction: systemPrompt,
   });
 
