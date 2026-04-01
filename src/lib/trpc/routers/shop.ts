@@ -319,4 +319,10 @@ export const shopRouter = router({
 
       return { success: true };
     }),
+  joinShop: protectedProcedure
+    .input(z.object({ inviteCode: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      throw new TRPCError({ code: "NOT_IMPLEMENTED", message: "ฟีเจอร์การเข้าร่วมด้วยรหัสเชิญถูกยกเลิก กรุณาให้เจ้าของร้านเพิ่มพนักงานผ่านระบบหลังบ้าน" });
+    }),
+
 });
